@@ -23,10 +23,11 @@ WORKDIR /app
 
 COPY ./requirements.txt .
 
-# timezone and init process (bash: py3.13+ 的 alpine 镜像不再内置, 入口脚本需要)
+# timezone and init process
+# 注意: tzdata 必须保留(APScheduler 3.11+ 用 zoneinfo 需要系统时区库, 不可 apk del);
+# bash: py3.13+ 的 alpine 镜像不再内置, 入口脚本需要
 RUN apk add -U tzdata tini bash && \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    apk del tzdata
+    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 # runtime environment
 RUN apk add musl-dev gcc libxml2-dev libxslt-dev && \

@@ -10,17 +10,19 @@
                    2017/7/31:
 -------------------------------------------------
 """
+# pyright: reportAttributeAccessIssue=false
 __author__ = 'J_hao'
 
 from requests.models import Response
 from lxml import etree
 import requests
+import urllib3
 import random
 import time
 
 from handler.logHandler import LogHandler
 
-requests.packages.urllib3.disable_warnings()
+urllib3.disable_warnings()
 
 
 class WebRequest(object):

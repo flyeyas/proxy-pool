@@ -57,11 +57,13 @@ def _acquireRefreshLock():
     """获取刷新任务锁, 成功返回 fd(POSIX) 或 True(Windows), 已被占用返回 None"""
     global _refresh_fd, _refresh_running
     if fcntl is not None:
+        fd = None
         try:
             fd = os.open(_REFRESH_LOCK_FILE, os.O_CREAT | os.O_RDWR, 0o644)
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
-            os.close(fd)
+            if fd is not None:
+                os.close(fd)
             return None
         _refresh_fd = fd
         return fd
@@ -146,8 +148,8 @@ def authLogin():
     username = (data.get('username') or '').strip()
     password = data.get('password') or ''
     conf = ConfigHandler()
-    ok_user = hmac.compare_digest(username, conf.webuiUsername)
-    ok_pwd = hmac.compare_digest(password, conf.webuiPassword)
+    ok_user = hmac.compare_digest(username, str(conf.webuiUsername))
+    ok_pwd = hmac.compare_digest(password, str(conf.webuiPassword))
     if ok_user and ok_pwd:
         session[_SESSION_KEY] = True
         return apiOk(message="login successful")

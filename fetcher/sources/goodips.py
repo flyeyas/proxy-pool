@@ -10,6 +10,7 @@
                    2026/05/31:
 -------------------------------------------------
 """
+# pyright: reportOptionalMemberAccess=false
 __author__ = 'JHao'
 
 from fetcher.baseFetcher import BaseFetcher

@@ -12,6 +12,8 @@
 """
 __author__ = 'JHao'
 
+from typing import Any
+
 
 class LazyProperty(object):
     """
@@ -22,7 +24,7 @@ class LazyProperty(object):
     def __init__(self, func):
         self.func = func
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, owner) -> Any:
         if instance is None:
             return self
         else:

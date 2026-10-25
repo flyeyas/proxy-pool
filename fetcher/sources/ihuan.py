@@ -10,6 +10,7 @@
                    2026/05/31:
 -------------------------------------------------
 """
+# pyright: reportAttributeAccessIssue=false
 __author__ = 'JHao'
 
 from lxml import etree
