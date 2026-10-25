@@ -6,8 +6,14 @@ __pycache__/
 *.log
 .tox
 .claude/
+.zcode/
+.env
+.env.local
+runtime_config.json
 docs/ideas/
 docs/specs/
 .coverage
 .pytest_cache/
 htmlcov/
+webui/node_modules/
+webui/dist/

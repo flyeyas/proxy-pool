@@ -12,10 +12,13 @@
                    2019/08/14: 集成Gunicorn启动方式
                    2020/06/23: 新增pop接口
                    2022/07/21: 更新count接口
+                   2026/10/24: 注册WebUI Blueprint
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
+import os
+import hashlib
 import platform
 from werkzeug.wrappers import Response
 from flask import Flask, jsonify, request
@@ -24,6 +27,7 @@ from util.six import iteritems
 from helper.proxy import Proxy
 from handler.proxyHandler import ProxyHandler
 from handler.configHandler import ConfigHandler
+from api.webuiApi import webui_bp
 
 app = Flask(__name__)
 conf = ConfigHandler()
@@ -40,13 +44,23 @@ class JsonResponse(Response):
 
 
 app.response_class = JsonResponse
+app.register_blueprint(webui_bp)
+
+# WebUI 登录会话签名密钥: 优先环境变量; 未设置时由账号密码派生,
+# 保证 gunicorn 多 worker 下各进程密钥一致(登录态不丢失)
+app.secret_key = os.getenv('WEBUI_SECRET_KEY') or hashlib.sha256(
+    ('proxy_pool_webui:%s:%s' % (conf.webuiUsername, conf.webuiPassword)).encode()).hexdigest()
 
 api_list = [
     {"url": "/get", "params": "type: ''https'|''", "desc": "get a proxy"},
     {"url": "/pop", "params": "", "desc": "get and delete a proxy"},
     {"url": "/delete", "params": "proxy: 'e.g. 127.0.0.1:8080'", "desc": "delete an unable proxy"},
     {"url": "/all", "params": "type: ''https'|''", "desc": "get all proxy from proxy pool"},
-    {"url": "/count", "params": "", "desc": "return proxy count"}
+    {"url": "/count", "params": "", "desc": "return proxy count"},
+    {"url": "/fetchers", "params": "", "desc": "list all proxy fetchers (for WebUI)"},
+    {"url": "/refresh", "params": "method: 'POST'", "desc": "trigger a fetch and check run (for WebUI)"},
+    {"url": "/logs", "params": "name, lines", "desc": "list log files / read recent log lines (for WebUI)"},
+    {"url": "/webui", "params": "", "desc": "WebUI dashboard"},
     # 'refresh': 'refresh proxy pool',
 ]
 

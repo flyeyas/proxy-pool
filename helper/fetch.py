@@ -20,6 +20,7 @@ from threading import Thread
 
 from helper.proxy import Proxy
 from helper.check import DoValidator
+from helper.fetcherConfig import getRuntimeExclude
 from handler.logHandler import LogHandler
 from handler.configHandler import ConfigHandler
 from fetcher.baseFetcher import BaseFetcher
@@ -132,7 +133,8 @@ class Fetcher(object):
         thread_list = list()
         self.log.info("ProxyFetch : start")
 
-        exclude_list = self.conf.fetcherExclude
+        # 黑名单 = setting.py 静态配置 + WebUI 后台运行时开关(热生效, 每轮抓取前读取)
+        exclude_list = list(set(self.conf.fetcherExclude) | set(getRuntimeExclude()))
         fetcher_classes = _discover_fetchers(exclude_list)
         self.log.info("ProxyFetch : active fetchers [%s]" % ", ".join(c.name for c in fetcher_classes))
 

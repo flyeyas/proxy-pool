@@ -8,6 +8,7 @@
 -------------------------------------------------
    Change Activity:
                    2020/6/22:
+                   2026/10/25: 接入 .env 配置文件加载
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -17,6 +18,11 @@ import setting
 from util.singleton import Singleton
 from util.lazyProperty import LazyProperty
 from util.six import reload_six, withMetaclass
+from util.envHandler import loadAllEnvVars
+
+# 启动时加载环境配置文件, 优先级: 系统环境变量 > .env.local(本地) > .env(线上) > setting.py
+# 见 util/envHandler.py
+LOADED_ENV_FILES = loadAllEnvVars()
 
 
 class ConfigHandler(withMetaclass(Singleton)):
@@ -80,4 +86,13 @@ class ConfigHandler(withMetaclass(Singleton)):
     @LazyProperty
     def timezone(self):
         return os.getenv("TIMEZONE", setting.TIMEZONE)
+
+    @LazyProperty
+    def webuiUsername(self):
+        return os.environ.get("WEBUI_USERNAME", "admin")
+
+    @LazyProperty
+    def webuiPassword(self):
+        # 为空时 WebUI 登录验证关闭
+        return os.environ.get("WEBUI_PASSWORD", "")
 

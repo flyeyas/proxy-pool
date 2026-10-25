@@ -22,6 +22,12 @@ import fakeredis
 # 确保项目根目录在 sys.path 中
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 测试环境固定 WebUI 登录相关变量(置空=关闭登录), 同时阻止本机 .env 注入干扰;
+# 必须放在项目模块 import 之前: configHandler 导入时会加载项目根目录 .env
+os.environ["WEBUI_USERNAME"] = "test_user"
+os.environ["WEBUI_PASSWORD"] = ""
+os.environ["WEBUI_SECRET_KEY"] = "test-secret-key"
+
 from util.singleton import Singleton
 from helper.proxy import Proxy
 

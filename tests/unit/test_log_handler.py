@@ -16,7 +16,9 @@ import logging
 import pytest
 from unittest.mock import patch, MagicMock
 
-from handler.logHandler import LogHandler, DEBUG, INFO, ERROR
+from handler.logHandler import (
+    LogHandler, DEBUG, INFO, ERROR, listLogFiles, readRecentLines
+)
 
 
 class TestLogHandlerInit:
@@ -113,3 +115,40 @@ class TestLogHandlerDirCreation:
         # 验证模块级代码不会因 FileExistsError 崩溃
         import handler.logHandler as lh
         assert lh.LOG_PATH is not None
+
+
+class TestLogFiles:
+    """listLogFiles / readRecentLines 测试"""
+
+    def test_list_log_files(self, tmp_path, monkeypatch):
+        """列出 log 目录下全部 .log 文件(去扩展名, 排序)"""
+        monkeypatch.setattr("handler.logHandler.LOG_PATH", str(tmp_path))
+        (tmp_path / "fetch.log").write_text("l", encoding="utf-8")
+        (tmp_path / "checker.log").write_text("l", encoding="utf-8")
+        (tmp_path / "readme.txt").write_text("l", encoding="utf-8")
+        assert listLogFiles() == ["checker", "fetch"]
+
+    def test_list_log_files_missing_dir(self, tmp_path, monkeypatch):
+        """目录不存在返回空列表"""
+        monkeypatch.setattr("handler.logHandler.LOG_PATH", str(tmp_path / "not_exist"))
+        assert listLogFiles() == []
+
+    def test_read_recent_lines_returns_tail(self, tmp_path, monkeypatch):
+        """返回尾部 N 行"""
+        monkeypatch.setattr("handler.logHandler.LOG_PATH", str(tmp_path))
+        (tmp_path / "fetch.log").write_text(
+            "".join("line%d\n" % i for i in range(1, 6)), encoding="utf-8")
+        ok, lines = readRecentLines("fetch", 2)
+        assert ok is True
+        assert lines == ["line4", "line5"]
+
+    def test_read_recent_lines_invalid_name(self, tmp_path, monkeypatch):
+        """非法日志名返回 (False, [])"""
+        monkeypatch.setattr("handler.logHandler.LOG_PATH", str(tmp_path))
+        for name in ("../setting", "a/b", "a b", "", None):
+            assert readRecentLines(name, 10) == (False, [])
+
+    def test_read_recent_lines_file_not_found(self, tmp_path, monkeypatch):
+        """文件不存在返回 (False, [])"""
+        monkeypatch.setattr("handler.logHandler.LOG_PATH", str(tmp_path))
+        assert readRecentLines("nope", 10) == (False, [])

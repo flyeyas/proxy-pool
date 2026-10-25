@@ -1,3 +1,17 @@
+# ---------- build webui ----------
+FROM node:20-alpine AS webui-builder
+
+WORKDIR /webui
+
+COPY webui/package.json webui/package-lock.json ./
+
+RUN npm ci
+
+COPY webui/ ./
+
+RUN npm run build
+
+# ---------- runtime ----------
 FROM python:3.10-alpine
 
 LABEL maintainer="jhao104 <j_hao104@163.com>"
@@ -17,6 +31,9 @@ RUN apk add musl-dev gcc libxml2-dev libxslt-dev && \
     apk del gcc musl-dev
 
 COPY . .
+
+# webui 前端构建产物
+COPY --from=webui-builder /webui/dist /app/webui/dist
 
 EXPOSE 5010
 

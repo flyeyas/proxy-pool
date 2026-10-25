@@ -15,6 +15,8 @@ Python (3.8–3.11)、Flask (API)、Redis/SSDB (存储)、APScheduler (调度)�
 - 运行集成测试（需真实 Redis）：`pytest tests/integration/ -m integration`
 - 运行全部测试：`pytest`
 - 查看覆盖率：`pytest --cov=. --cov-report=term-missing`
+- WebUI 前端开发（需同时运行 server）：`cd webui && npm run dev`
+- WebUI 前端构建：`cd webui && npm run build`（产物 `webui/dist/`，由 Flask 托管在 `/webui/`）
 
 ## 测试
 
@@ -30,7 +32,8 @@ tests/
 │   ├── test_base_fetcher.py # BaseFetcher 基类解析方法
 │   └── test_fetcher_sources.py # 各代理源 fetcher yield 逻辑
 ├── api/                     # Flask 测试客户端，mock ProxyHandler
-│   └── test_proxy_api.py    # /get /pop /all /count /delete 全路由
+│   ├── test_proxy_api.py    # /get /pop /all /count /delete 全路由
+│   └── test_webui_api.py    # /fetchers /refresh(POST) /logs /webui 静态托管
 └── integration/             # 需要真实 Redis，标记 @pytest.mark.integration
     ├── test_redis_client.py # RedisClient 完整 CRUD
     └── test_ssdb_client.py  # SsdbClient 完整 CRUD
@@ -64,6 +67,12 @@ tests/
   - `/count`：代理数量统计
   - `/delete`：通过 `?proxy=host:port` 删除指定代理
   - 服务运行在 `HOST:PORT`（默认 `0.0.0.0:5010`），配置来自 `setting.py`。
+- **WebUI** (`api/webuiApi.py` + `webui/`)：Blueprint，为 Vue 3 + Vite 前端（`webui/` 目录，零组件库依赖）提供支持：
+  - `/webui/`：托管 `webui/dist/` 构建产物（SPA history 路由 fallback；未构建返回 503）
+  - `/fetchers`：全部代理源及 enabled/黑名单状态（黑名单按类名 `__name__` 匹配）；`POST /fetchers/toggle` 后台启停代理源（运行时黑名单存 `runtime_config.json`，与 `setting.PROXY_FETCHER_EXCLUDE` 并集生效，见 `helper/fetcherConfig.py`）
+  - `/refresh`（POST）：后台线程执行一次"抓取(raw)+全池校验(use)"，进程内锁防重入（gunicorn 多 worker 下不跨进程）
+  - `/logs`：日志文件列表 / 尾部内容（name 白名单校验防路径穿越，lines 上限 1000）
+  - 登录验证：`.env` 设 `WEBUI_PASSWORD` 后启用（`WEBUI_USERNAME` 默认 admin；会话 Cookie，secret 由账号密码派生保证 gunicorn 多 worker 一致）。保护 `/fetchers`、`/logs`、`POST /refresh`、`/delete`；对外代理 API 不受影响
 - **命令行入口** (`proxyPool.py`)：基于 click 的命令行工具，包含 `schedule` 和 `server` 两个子命令。
 
 ### 扩展代理源
@@ -71,7 +80,7 @@ tests/
 2. 调度器下一轮采集自动发现并启用，无需修改配置。可用 `python proxyPool.py fetcher` 查看启用列表。
 
 ## 关键配置
-所有运行时配置均在 `setting.py` 中：
+所有运行时配置均在 `setting.py` 中，支持同名环境变量覆盖（优先级：系统环境变量 > 项目根目录 `.env.local`（本地开发覆盖，不入库）> `.env`（线上默认）> `setting.py`；由 `util/envHandler.py` 的 `loadAllEnvVars` 在 `configHandler` 导入时自动加载，`.env.example` 为模板，启动日志会打印实际加载的文件）：
 - `HOST`/`PORT`：API 绑定的地址和端口
 - `DB_CONN`：数据库连接字符串
 - `PROXY_FETCHER_EXCLUDE`：爬取器黑名单（自动扫描 `enabled=True` 的源，排除黑名单中的）

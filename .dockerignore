@@ -1,0 +1,16 @@
+.git
+.github
+.idea
+.claude
+.tox
+site
+log/
+docs/
+webui/node_modules
+webui/dist
+__pycache__
+*.pyc
+*.pyc.*
+.pytest_cache
+.coverage
+htmlcov
