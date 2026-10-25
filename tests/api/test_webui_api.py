@@ -238,10 +238,13 @@ class TestWebuiAuth:
     """WebUI 登录鉴权测试(conftest 已将 WEBUI_PASSWORD 置空=默认关闭)"""
 
     def test_status_when_disabled(self, client):
-        """未配置密码时登录关闭, 接口无需登录"""
+        """未配置密码时登录关闭, 接口无需登录; 返回程序版本"""
         resp = client.get("/auth/status/")
         assert resp.status_code == 200
-        assert resp.get_json()["data"] == {"required": False, "logged_in": False}
+        data = resp.get_json()["data"]
+        assert data["required"] is False
+        assert data["logged_in"] is False
+        assert data["version"]
         assert client.get("/fetchers/").status_code == 200
 
     def test_login_flow(self, client, monkeypatch):
@@ -261,7 +264,9 @@ class TestWebuiAuth:
         assert data["message"] == "login successful"
 
         assert client.get("/fetchers/").status_code == 200
-        assert client.get("/auth/status/").get_json()["data"] == {"required": True, "logged_in": True}
+        status = client.get("/auth/status/").get_json()["data"]
+        assert status["required"] is True
+        assert status["logged_in"] is True
 
         client.post("/auth/logout/")
         assert client.get("/fetchers/").status_code == 401

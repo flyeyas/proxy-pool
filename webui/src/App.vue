@@ -30,7 +30,9 @@ async function logout() {
   <div class="layout">
     <header class="topbar" v-if="!auth.required || auth.loggedIn">
       <div class="brand">
-        ProxyPool <span class="brand-sub">控制台</span>
+        ProxyPool
+        <span class="brand-sub">控制台</span>
+        <span v-if="auth.version" class="brand-sub">v{{ auth.version }}</span>
       </div>
       <nav class="nav">
         <RouterLink to="/">仪表盘</RouterLink>
