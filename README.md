@@ -112,7 +112,7 @@ Responses use a unified envelope (`code` always equals the HTTP status):
 
 | Endpoint | Method | Description | Params |
 | ----| ---- | ---- | ----|
-| `/` | GET | API index | none |
+| `/` | GET | Redirects to `/webui/` (API docs live in the WebUI "API 文档" page) | none |
 | `/get` | GET | Random proxy (404 when pool empty) | optional `?type=https` |
 | `/pop` | GET | Get and remove a proxy (404 when empty) | optional `?type=https` |
 | `/all` | GET | All proxies as `{"count": N, "proxies": [...]}` | optional `?type=https` |

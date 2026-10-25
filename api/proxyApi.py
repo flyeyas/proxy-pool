@@ -21,7 +21,7 @@ import os
 import hashlib
 import platform
 from werkzeug.wrappers import Response
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect
 
 from util.six import iteritems
 from helper.proxy import Proxy
@@ -52,24 +52,10 @@ app.register_blueprint(webui_bp)
 app.secret_key = os.getenv('WEBUI_SECRET_KEY') or hashlib.sha256(
     ('proxy_pool_webui:%s:%s' % (conf.webuiUsername, conf.webuiPassword)).encode()).hexdigest()
 
-api_list = [
-    {"url": "/", "method": "GET", "desc": "api list"},
-    {"url": "/get", "method": "GET", "params": "type: 'https'|''", "desc": "get a random proxy"},
-    {"url": "/pop", "method": "GET", "params": "type: 'https'|''", "desc": "get and remove a proxy"},
-    {"url": "/all", "method": "GET", "params": "type: 'https'|''", "desc": "get all proxies"},
-    {"url": "/count", "method": "GET", "desc": "proxy count stats"},
-    {"url": "/delete", "method": "DELETE", "params": "proxy: 'e.g. 127.0.0.1:8080'", "desc": "delete a proxy"},
-    {"url": "/fetchers", "method": "GET", "desc": "list all proxy fetchers (for WebUI)"},
-    {"url": "/fetchers/<class_name>", "method": "PATCH", "desc": "enable/disable a fetcher (for WebUI)"},
-    {"url": "/refresh", "method": "POST", "desc": "trigger a fetch and check run (for WebUI)"},
-    {"url": "/logs", "method": "GET", "desc": "list log files / read recent log lines (for WebUI)"},
-    {"url": "/webui", "method": "GET", "desc": "WebUI dashboard"},
-]
-
-
 @app.route('/')
 def index():
-    return apiOk({"apis": api_list})
+    # 根路径直接跳转 WebUI; API 说明文档在 WebUI「API 文档」页
+    return redirect('/webui/')
 
 
 @app.route('/get/')
