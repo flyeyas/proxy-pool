@@ -11,6 +11,7 @@
                    2017/09/21: 屏幕输出/文件输出 可选(默认屏幕和文件均输出)
                    2020/07/13: Windows下TimedRotatingFileHandler线程不安全, 不再使用
                    2026/10/24: 新增listLogFiles/readRecentLines 供WebUI日志查看
+                   2026/10/25: 日志改为按小时切割, 保留168个(7天)
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -66,9 +67,11 @@ class LogHandler(logging.Logger):
         :return:
         """
         file_name = os.path.join(LOG_PATH, '{name}.log'.format(name=self.name))
-        # 设置日志回滚, 保存在log目录, 一天保存一个文件, 保留15天
-        file_handler = TimedRotatingFileHandler(filename=file_name, when='D', interval=1, backupCount=15)
-        file_handler.suffix = '%Y%m%d.log'
+        # 按小时切割日志, 一小时一个文件, 保留168个(7天)
+        # 切割后的备份文件命名为 name.log.YYYYMMDDHH(不带.log结尾, 避免混入WebUI日志列表)
+        file_handler = TimedRotatingFileHandler(filename=file_name, when='H', interval=1, backupCount=168)
+        file_handler.suffix = '%Y%m%d%H'
+        file_handler.extMatch = re.compile(r'^\d{10}$')
         if not level:
             file_handler.setLevel(self.level)
         else:

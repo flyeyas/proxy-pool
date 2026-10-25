@@ -162,15 +162,17 @@ def get_html():
 # 构建镜像
 docker build -t flyeyas/proxy-pool .
 
-# 先启动一个名为 proxy_redis 的 Redis（docker-compose 依赖它）
-docker run -d --name proxy_redis redis
-
-# 一键启动（API + 调度）
+# 一键启动（compose 会同时拉起 proxy_redis 与应用，日志挂载到宿主机 ./log/）
 docker-compose up -d
 
-# 或手动运行
-docker run --env DB_CONN=redis://:password@ip:port/0 -p 5010:5010 flyeyas/proxy-pool
+# 或手动运行（日志挂载到宿主机目录，可直接查看）
+docker run -d --env DB_CONN=redis://:password@ip:port/0 \
+  --env WEBUI_PASSWORD=change-me \
+  -p 5010:5010 -v /宿主机日志目录:/app/log \
+  flyeyas/proxy-pool
 ```
+
+容器把 `/app/log` 声明为卷，挂载后在宿主机直接 `tail -f` 日志文件（按小时切割，保留 7 天），详见 [docs/docker.md](docs/docker.md)。
 
 ## 扩展代理源
 
