@@ -67,6 +67,20 @@ def deleteToken(token):
     return len(remain) != len(tokens)
 
 
+def renameToken(token, name):
+    """
+    修改指定 token 的备注名
+    :return: dict 更新后的 token 信息; 不存在返回 None
+    """
+    config = readConfig()
+    for item in config.get(TOKENS_KEY, []):
+        if item.get('token') == token:
+            item['name'] = name or '未命名'
+            writeConfig(config)
+            return item
+    return None
+
+
 def verifyApiToken(token):
     """校验 token: 存在且未过期"""
     if not token:

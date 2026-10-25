@@ -39,7 +39,7 @@ ls /var/log/proxy_pool/
 
 ## 使用 docker-compose
 
-`docker-compose.yml` 只定义应用本身，**配置统一从项目根目录 `.env` 读取**（`env_file`，与本地运行共用一份配置），日志挂载到 `./log/`，并设置了 `restart: unless-stopped` 开机自启/崩溃拉起：
+`docker-compose.yml` 为**自包含部署**：应用 + 内置 Redis（AOF 持久化 + 数据卷，密码取自 `.env` 的 `REDIS_PASSWORD`），配置统一从 `.env` 读取，日志挂载到 `./log/`，并设置 `restart: unless-stopped`：
 
 ```yaml
 services:
@@ -52,20 +52,39 @@ services:
       - .env
     volumes:
       - ./log:/app/log
+    depends_on:
+      - proxy_redis
     restart: unless-stopped
+
+  proxy_redis:
+    image: redis:alpine
+    container_name: proxy_redis
+    command: ["redis-server", "--appendonly", "yes",
+              "--requirepass", "${REDIS_PASSWORD:-proxypool}"]
+    volumes:
+      - redis_data:/data
+    # 仅发布到宿主机回环: 本机裸跑程序可连 127.0.0.1:26739, 不暴露公网
+    ports:
+      - "127.0.0.1:26739:6379"
+    restart: unless-stopped
+
+volumes:
+  redis_data:
 ```
 
-部署步骤（连接你自己的 Redis，无需在 compose 里定义数据库）：
+部署步骤：
 
 ```console
 cp .env.example .env
-#   编辑 .env: DB_CONN=redis://:密码@主机:端口/0, WEBUI_PASSWORD=...
+#   编辑 .env: REDIS_PASSWORD 与 DB_CONN 密码保持一致, 以及 WEBUI_PASSWORD
 docker compose up -d --build
 ```
 
 !!! note
-    - `.env`/`.env.local`/`runtime_config.json` 已被 `.dockerignore` 排除，**不会打进镜像**；配置通过 `env_file` 在运行时注入
-    - 如需在服务器本地跑一个 Redis 而不是外部 Redis：`docker run -d --name proxy_redis redis` 后把 `.env` 的 `DB_CONN` 指向它（`redis://@宿主机IP:6379/0`）即可，compose 无需改动
+    - `DB_CONN` 使用服务名 `proxy_redis:6379`（compose 内网直连，不经过公网）
+    - Redis 端口只发布到宿主机 `127.0.0.1:26739`：宿主机上裸跑的程序（`python proxyPool.py`）可通过 `DB_CONN=redis://:密码@127.0.0.1:26739/0` 连同一份数据，且不暴露公网
+    - Redis 数据在命名卷 `redis_data` 中持久化，重建容器不丢失
+    - 如需改用外部 Redis：注释 `.env` 中的 `REDIS_PASSWORD`，把 `DB_CONN` 指向外部地址即可（compose 中的 proxy_redis 可删除或保留闲置）
 
 ## 容器环境注意事项
 

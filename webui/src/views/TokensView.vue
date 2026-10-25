@@ -10,6 +10,8 @@ const expireDays = ref(30)
 const message = ref('')
 const messageIsErr = ref(false)
 const copiedToken = ref('')
+const editingToken = ref('')
+const editName = ref('')
 
 const expireOptions = [
   { value: 7, label: '7 天' },
@@ -68,6 +70,31 @@ async function copy(item) {
   }
 }
 
+function startEdit(item) {
+  editingToken.value = item.token
+  editName.value = item.name === '未命名' ? '' : item.name
+}
+
+async function saveEdit() {
+  const name = editName.value.trim()
+  if (!name) {
+    flash('备注名不能为空', true)
+    return
+  }
+  try {
+    await api.tokenRename(editingToken.value, name)
+    editingToken.value = ''
+    flash('备注已更新')
+    await load()
+  } catch (e) {
+    flash('修改失败: ' + e.message, true)
+  }
+}
+
+function cancelEdit() {
+  editingToken.value = ''
+}
+
 function isExpired(item) {
   if (!item.expires_at) return false
   return new Date(item.expires_at.replace(' ', 'T')) < new Date()
@@ -110,7 +137,19 @@ load()
           </thead>
           <tbody>
             <tr v-for="item in tokens" :key="item.token">
-              <td>{{ item.name }}</td>
+              <td>
+                <template v-if="editingToken === item.token">
+                  <input type="text" v-model="editName" placeholder="备注名"
+                         style="width: 140px" @keyup.enter="saveEdit" />
+                  <button class="btn btn-primary" style="margin-left: 6px; padding: 2px 10px" @click="saveEdit">保存</button>
+                  <button class="btn" style="margin-left: 4px; padding: 2px 10px" @click="cancelEdit">取消</button>
+                </template>
+                <template v-else>
+                  {{ item.name }}
+                  <button class="btn" style="margin-left: 6px; padding: 2px 8px"
+                          title="修改备注" @click="startEdit(item)">✎</button>
+                </template>
+              </td>
               <td class="mono" style="max-width: 360px; overflow: hidden; text-overflow: ellipsis">
                 {{ item.token }}
                 <button class="btn" style="margin-left: 8px; padding: 2px 8px" @click="copy(item)">
