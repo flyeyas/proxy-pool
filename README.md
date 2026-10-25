@@ -1,207 +1,165 @@
+# ProxyPool 爬虫代理IP池
 
-ProxyPool 爬虫代理IP池
-=======
-[![Tests](https://github.com/jhao104/proxy_pool/actions/workflows/test.yml/badge.svg)](https://github.com/jhao104/proxy_pool/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/jhao104/proxy_pool/graph/badge.svg?token=8WHGkrQA6E)](https://codecov.io/gh/jhao104/proxy_pool)
-[![](https://img.shields.io/badge/Powered%20by-@j_hao104-green.svg)](http://www.spiderpy.cn/blog/)
-[![Packagist](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://github.com/jhao104/proxy_pool/blob/master/LICENSE)
-[![GitHub contributors](https://img.shields.io/github/contributors/jhao104/proxy_pool.svg)](https://github.com/jhao104/proxy_pool/graphs/contributors)
-[![](https://img.shields.io/badge/language-Python-green.svg)](https://github.com/jhao104/proxy_pool)
-
+```
     ______                        ______             _
     | ___ \_                      | ___ \           | |
     | |_/ / \__ __   __  _ __   _ | |_/ /___   ___  | |
     |  __/|  _// _ \ \ \/ /| | | ||  __// _ \ / _ \ | |
     | |   | | | (_) | >  < \ |_| || |  | (_) | (_) || |___
-    \_|   |_|  \___/ /_/\_\ \__  |\_|   \___/ \___/ \_____\
+    \_|   |_|  \___/ /_/\_\ \__  |\_|   \___/ \___/ \_____/
                            __ / /
                           /___ /
-
-### ProxyPool
-
-爬虫代理IP池项目,主要功能为定时采集网上发布的免费代理验证入库，定时验证入库的代理保证代理的可用性，提供API和CLI两种使用方式。同时你也可以扩展代理源以增加代理池IP的质量和数量。
-
-* 文档: [document](https://jhao104.github.io/proxy_pool/)
-
-* 支持版本: 
-[![](https://img.shields.io/badge/Python-3.8-blue.svg)](https://docs.python.org/3.8/)
-[![](https://img.shields.io/badge/Python-3.9-blue.svg)](https://docs.python.org/3.9/)
-[![](https://img.shields.io/badge/Python-3.10-blue.svg)](https://docs.python.org/3.10/)
-[![](https://img.shields.io/badge/Python-3.11-blue.svg)](https://docs.python.org/3.11/)
-
-* 测试地址: http://demo.spiderpy.cn (勿压谢谢)
-
-* 付费代理推荐: [亮数据 Bright Data](https://get.brightdata.com/github_jh)（前身 Luminati）.全球代理与网络抓取行业头部领导者。覆盖 195+ 国家的 1.5亿+ 真人住宅IP，亲测成功率极高，轻松突破反爬封锁。需要高质量代理IP的可以注册后联系中文客服。[申请免费试用](https://get.brightdata.com/github_jh) (PS:用不明白的同学可以参考这个[使用教程](https://www.cnblogs.com/jhao/p/15611785.html))。
-
-&emsp;&emsp; 想自建爬虫？接入 [Bright Data MCP Server](https://get.brightdata.com/cd3yy5)，让 Claude、Cursor、Windsurf 等 AI 助手直接实时抓取网页——自动破解验证码、绕过地区限制。[Scraper Studio](https://get.brightdata.com/cd3yy5) 支持 AI 一键生成或 JS 代码定制，全托管基础设施运行，无需自购代理、无需搭服务器，分钟级上线。所有产品底层均由同一套顶级代理网络驱动。
-
-&emsp;&emsp; API 产品现享7折 + 免费试用额度，注册后可联系中文客服快速上手。(用不明白的同学可参考使用教程，或注册后直接使用互动 AI 智能助手)
-👉 [https://get.brightdata.com/cd3yy5](https://get.brightdata.com/cd3yy5)
-
-
-### 运行项目
-
-##### 下载代码:
-
-* git clone
-
-```bash
-git clone https://github.com/jhao104/proxy_pool.git
 ```
 
-* releases
+> **声明**：本项目基于开源项目 [jhao104/proxy_pool](https://github.com/jhao104/proxy_pool) 二次开发，感谢原作者 [@jhao104](https://github.com/jhao104) 的开源贡献。
+
+## 项目简介
+
+爬虫代理IP池：定时采集网上发布的免费代理、验证后入库，定时复检保证代理可用性，通过 **RESTful API**、**CLI** 和 **WebUI 管理后台** 三种方式使用。支持扩展代理源以提升代理池的质量和数量。
+
+相对原项目的主要增强：
+
+- **WebUI 管理后台**（`/webui/`）：仪表盘（统计卡片 / 协议与来源分布 / 代理列表筛选搜索删除）、**代理源后台启停开关**（热生效）、运行日志查看、手动触发"抓取 + 校验"
+- **账号密码登录**：保护管理接口（`.env` 一行配置即可启用），对外的代理 API 不受影响
+- **`.env` 环境配置**：`系统环境变量 > .env.local(本地) > .env(线上) > setting.py` 四级优先，密码等敏感信息不入库
+- **Docker 多阶段构建**：镜像内自动构建 WebUI 前端
+
+## 环境要求
+
+- Python 3.8 – 3.13（依赖按 Python 版本自动选择）
+- Redis 或 SSDB（存储）
+- Node.js 18+（仅构建 WebUI 前端时需要，Docker 部署无需本地安装）
+
+## 快速开始
 
 ```bash
-https://github.com/jhao104/proxy_pool/releases 下载对应zip文件
-```
+# 1. 获取代码
+git clone https://github.com/flyeyas/proxy-pool.git
+cd proxy-pool
 
-##### 安装依赖:
-
-```bash
+# 2. 安装依赖（国内可加 -i https://mirrors.aliyun.com/pypi/simple/）
 pip install -r requirements.txt
+
+# 3. 配置：复制模板并填写数据库连接
+cp .env.example .env
+#   编辑 .env，至少配置 DB_CONN，如：
+#   DB_CONN=redis://:password@127.0.0.1:6379/0
+
+# 4. 启动（两个进程）
+python proxyPool.py schedule   # 调度程序：定时抓取 + 复检
+python proxyPool.py server     # API + WebUI 服务（默认 0.0.0.0:5010）
+
+# 5.（可选）构建 WebUI 前端
+cd webui && npm install && npm run build
+#   然后访问 http://127.0.0.1:5010/webui/
 ```
 
-##### 更新配置:
+其他命令：`python proxyPool.py fetcher` 查看当前启用的代理源列表。
 
+### 环境配置说明
 
-```python
-# setting.py 为项目配置文件
-# 也可以复制 .env.example 为 .env 用环境变量方式配置
-# 优先级: 环境变量 > .env.local(本地开发覆盖) > .env(线上默认) > setting.py
-# 本地测试建议把覆盖配置写在 .env.local(不入库); 线上服务器只放 .env
+配置优先级：**系统环境变量 > `.env.local`（本地开发覆盖，不入库）> `.env`（线上默认）> `setting.py`**
 
-# 配置API服务
+常用配置项（完整列表见 [.env.example](.env.example) 与 [setting.py](setting.py)）：
 
-HOST = "0.0.0.0"               # IP
-PORT = 5000                    # 监听端口
+| 变量 | 说明 | 默认值 |
+| ---- | ---- | ---- |
+| `DB_CONN` | 数据库连接，`redis://:pwd@ip:port/db` 或 `ssdb://:pwd@ip:port` | 本地 Redis |
+| `HOST` / `PORT` | API 服务地址 / 端口 | `0.0.0.0` / `5010` |
+| `TABLE_NAME` | 代理存储表名 | `use_proxy` |
+| `VERIFY_TIMEOUT` | 代理验证超时（秒） | `10` |
+| `MAX_FAIL_COUNT` | 复检失败几次后剔除 | `0`（失败一次即剔除） |
+| `POOL_SIZE_MIN` | 池内代理低于该数量触发补抓 | `20` |
+| `WEBUI_USERNAME` / `WEBUI_PASSWORD` | WebUI 登录账号（密码留空则不启用登录） | `admin` / 空 |
 
+## WebUI 管理后台
 
-# 配置数据库
+访问 `http://127.0.0.1:5010/webui/`（需先构建前端，Docker 部署已内置）：
 
-DB_CONN = 'redis://:pwd@127.0.0.1:8888/0'
+- **仪表盘**：代理总数 / HTTP / HTTPS / 来源数；协议与来源分布条形图；代理列表（协议筛选、关键字搜索、单条删除）；5 秒自动刷新；「立即抓取并校验」按钮
+- **代理源**：全部代理源状态，支持**后台启停开关**（写入运行时黑名单 `runtime_config.json`，与 `setting.py` 黑名单并集生效，热生效）
+- **日志**：查看 `fetch` / `checker` / `scheduler` 等日志尾部内容，行数可选、自动刷新
 
+在 `.env` 中设置 `WEBUI_PASSWORD` 即启用登录验证：管理类接口（`/fetchers`、`/logs`、`/delete`、`POST /refresh`）需登录，对外代理 API（`/get` `/all` `/count` 等）不受影响。
 
-# 配置代理源（可选）
-# 默认自动扫描 fetcher/sources/ 目录下所有 enabled=True 的代理源
-# 如需禁用某些代理源，在黑名单中添加其 name 即可
-# PROXY_FETCHER_EXCLUDE = ["freevpnnode"]
-```
-
-#### 启动项目:
+前端开发模式（需同时运行 server）：
 
 ```bash
-# 如果已经具备运行条件, 可用通过proxyPool.py启动。
-# 程序分为: schedule 调度程序 和 server Api服务
-
-# 启动调度程序
-python proxyPool.py schedule
-
-# 启动webApi服务
-python proxyPool.py server
-
+cd webui && npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.1:5010
 ```
 
-### Docker Image
+## API 接口
 
-```bash
-docker pull jhao104/proxy_pool
+启动 `server` 后提供如下接口：
 
-docker run --env DB_CONN=redis://:password@ip:port/0 -p 5010:5010 jhao104/proxy_pool:latest
-```
-### docker-compose
-
-项目目录下运行: 
-``` bash
-docker-compose up -d
-```
-
-### 使用
-
-* Api
-
-启动web服务后, 默认配置下会开启 http://127.0.0.1:5010 的api接口服务:
-
-| api | method | Description | params|
+| 接口 | 方法 | 说明 | 参数 |
 | ----| ---- | ---- | ----|
-| / | GET | api介绍 | None |
-| /get | GET | 随机获取一个代理| 可选参数: `?type=https` 过滤支持https的代理|
-| /pop | GET | 获取并删除一个代理| 可选参数: `?type=https` 过滤支持https的代理|
-| /all | GET | 获取所有代理 |可选参数: `?type=https` 过滤支持https的代理|
-| /count | GET | 查看代理数量 |None|
-| /delete | GET | 删除代理  |`?proxy=host:ip`|
-| /fetchers | GET | 代理源列表 | None |
-| /refresh | POST | 手动触发一次抓取+校验 | None |
-| /logs | GET | 日志文件列表 / 尾部内容 | 可选: `?name=fetch&lines=200` |
+| `/` | GET | API 介绍 | 无 |
+| `/get` | GET | 随机获取一个代理 | 可选 `?type=https` |
+| `/pop` | GET | 获取并删除一个代理 | 可选 `?type=https` |
+| `/all` | GET | 获取所有代理 | 可选 `?type=https` |
+| `/count` | GET | 代理数量统计（含分布） | 无 |
+| `/delete` | GET | 删除代理 | `?proxy=host:port` |
+| `/fetchers` | GET | 代理源列表及状态 | 无 |
+| `/refresh` | POST | 手动触发一次抓取 + 校验（后台执行） | 无 |
+| `/logs` | GET | 日志文件列表 / 尾部内容 | 可选 `?name=fetch&lines=200` |
+| `/webui/` | GET | WebUI 管理后台 | 无 |
 
-* WebUI 后台
-
-启动web服务后访问 http://127.0.0.1:5010/webui/ 即可使用 WebUI 管理后台（需先构建前端）:
-
-```bash
-cd webui
-npm install
-npm run build
-```
-
-功能：仪表盘（代理统计/协议与来源分布/代理列表筛选搜索删除）、代理源状态、手动触发抓取+校验、运行日志查看。
-
-登录验证（可选，在 `.env` 中配置，详见 [docs/webui.md](docs/webui.md)）:
-
-```bash
-WEBUI_USERNAME=admin       # 默认 admin
-WEBUI_PASSWORD=your-pass   # 设置后启用登录, 留空不启用; 代理API(/get /all /count等)不受影响
-```
-
-前端开发模式（需同时启动 server，热更新）:
-
-```bash
-cd webui
-npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.1:5010
-```
-
-
-* 爬虫使用
-
-　　如果要在爬虫代码中使用的话， 可以将此api封装成函数直接使用，例如：
+### 在爬虫中使用
 
 ```python
 import requests
 
+
 def get_proxy():
     return requests.get("http://127.0.0.1:5010/get/").json()
+
 
 def delete_proxy(proxy):
     requests.get("http://127.0.0.1:5010/delete/?proxy={}".format(proxy))
 
-# your spider code
 
-def getHtml():
-    # ....
+def get_html():
     retry_count = 5
     proxy = get_proxy().get("proxy")
     while retry_count > 0:
         try:
-            html = requests.get('http://www.example.com', proxies={"http": "http://{}".format(proxy)})
-            # 使用代理访问
-            return html
+            return requests.get(
+                "http://www.example.com",
+                proxies={"http": "http://{}".format(proxy), "https": "https://{}".format(proxy)},
+            )
         except Exception:
             retry_count -= 1
-    # 删除代理池中代理
-    delete_proxy(proxy)
+            delete_proxy(proxy)
     return None
 ```
 
-### 扩展代理
+## Docker 部署
 
-　　项目默认包含几个免费的代理获取源，但是免费的毕竟质量有限，所以如果直接运行可能拿到的代理质量不理想。所以，提供了代理获取的扩展方法。
+镜像采用多阶段构建（Node 构建前端 → Python 运行），WebUI 已内置：
 
-　　添加一个新的代理源方法如下:
+```bash
+# 构建镜像
+docker build -t flyeyas/proxy-pool .
 
-* 1、在 `fetcher/sources/` 目录下新建 `.py` 文件，继承 `BaseFetcher` 基类，声明 `name`/`url`/`enabled` 属性，实现 `fetch()` 方法以生成器(yield)形式返回`host:port`格式的代理，例如:
+# 先启动一个名为 proxy_redis 的 Redis（docker-compose 依赖它）
+docker run -d --name proxy_redis redis
+
+# 一键启动（API + 调度）
+docker-compose up -d
+
+# 或手动运行
+docker run --env DB_CONN=redis://:password@ip:port/0 -p 5010:5010 flyeyas/proxy-pool
+```
+
+## 扩展代理源
+
+在 `fetcher/sources/` 目录下新建 `.py` 文件，继承 `BaseFetcher`，声明 `name` / `url` / `enabled` 属性，实现 `fetch()` 以生成器形式 yield `host:port`：
 
 ```python
 from fetcher.baseFetcher import BaseFetcher
 from util.webRequest import WebRequest
+
 
 class MyProxyFetcher(BaseFetcher):
     """我的代理源"""
@@ -216,53 +174,24 @@ class MyProxyFetcher(BaseFetcher):
             yield item["ip"] + ":" + item["port"]
 ```
 
-* 2、添加好后，`schedule` 进程下次抓取时会自动扫描 `fetcher/sources/` 目录并启用新代理源，无需修改配置。
+添加后调度器下轮抓取自动发现并启用，无需修改配置。禁用某个源的三种方式：
 
-　　可用 `python proxyPool.py fetcher` 命令查看当前启用的代理源列表。
+1. **WebUI 后台开关**（推荐，热生效）——代理源页点击「禁用」
+2. `setting.py` 的 `PROXY_FETCHER_EXCLUDE` 黑名单中添加类名
+3. 源文件中设置 `enabled = False`（永久禁用）
 
-　　如需临时禁用某个代理源，在 [setting.py](setting.py) 的 `PROXY_FETCHER_EXCLUDE` 黑名单中添加其 `name` 即可。
+## 运行测试
 
-### 免费代理源
+```bash
+pip install pytest pytest-cov fakeredis
 
-   目前实现的采集免费代理网站有(排名不分先后, 下面仅是对其发布的免费代理情况, 付费代理测评可以参考[这里](https://zhuanlan.zhihu.com/p/33576641)):
-   
-  | 代理名称         |  状态  | 更新速度 | 可用率 | 地址                                                | 代码                                                      |
-  |--------------|  ---- |------|-----|---------------------------------------------------|---------------------------------------------------------|
-  | 开心代理         |   ✔   | ★    | *   | [地址](http://www.kxdaili.com/)                     | [`kxdaili.py`](/fetcher/sources/kxdaili.py)             |
-  | 快代理          |  ✔    | ★    | *   | [地址](https://www.kuaidaili.com/)                  | [`kuaidaili.py`](/fetcher/sources/kuaidaili.py)         |
-  | 云代理          |  ✔    | ★    | *   | [地址](http://www.ip3366.net/)                      | [`ip3366.py`](/fetcher/sources/ip3366.py)               |
-  | 小幻代理         |  ✔    | ★    | *   | [地址](https://ip.ihuan.me/)                        | [`ihuan.py`](/fetcher/sources/ihuan.py)                 |
-  | 89代理         |  ✔    | ★★   | **  | [地址](https://www.89ip.cn)                         | [`ip89.py`](/fetcher/sources/ip89.py)                   |
-  | 稻壳代理         |  ✔    | ★★   | *** | [地址](https://www.docip.ne)                        | [`docip.py`](/fetcher/sources/docip.py)                 |
-  | 谷德代理         |  ✔    | ★★   | *** | [地址](https://www.goodips.com)                     | [`goodips.py`](/fetcher/sources/goodips.py)             |
-  | 66代理         |  ✔    | ★★   | *   | [地址](https://www.66daili.com)                     | [`daili66.py`](/fetcher/sources/daili66.py)             |
-  | Proxifly     |  ✔    | ★★   | **  | [地址](https://proxifly.dev)                        | [`proxifly.py`](/fetcher/sources/proxifly.py)           |
-  | FreeVPNNode  |  ✔    | ★★   | *   | [地址](https://cn.freevpnnode.com)                  | [`freevpnnode.py`](/fetcher/sources/freevpnnode.py)     |
-  | Geonode      |  ✔    | ★★   | **  | [地址](https://geonode.com)                         | [`geonode.py`](/fetcher/sources/geonode.py)             |
-  | RoundProxies |  ✔    | ★    | *   | [地址](https://roundproxies.com/free-proxy-list)    | [`roundproxies.py`](/fetcher/sources/roundproxies.py)   |
+pytest tests/unit/                        # 单元测试（零外部依赖）
+pytest tests/api/                         # API 测试（mock 数据库）
+pytest tests/integration/ -m integration  # 集成测试（需真实 Redis）
+pytest                                    # 全部
+```
 
-  
-  如果还有其他好的免费代理网站, 可以在提交在[issues](https://github.com/jhao104/proxy_pool/issues/71), 下次更新时会考虑在项目中支持。
+## 致谢
 
-### 问题反馈
-
-　　任何问题欢迎在[Issues](https://github.com/jhao104/proxy_pool/issues) 中反馈，同时也可以到我的[博客](http://www.spiderpy.cn/blog/message)中留言。
-
-　　你的反馈会让此项目变得更加完美。
-
-### 贡献代码
-
-　　本项目仅作为基本的通用的代理池架构，不接收特有功能(当然,不限于特别好的idea)。
-
-　　本项目依然不够完善，如果发现bug或有新的功能添加，请在[Issues](https://github.com/jhao104/proxy_pool/issues)中提交bug(或新功能)描述，我会尽力改进，使她更加完美。
-
-　　这里感谢以下contributor的无私奉献：
-
-　　[@kangnwh](https://github.com/kangnwh) | [@bobobo80](https://github.com/bobobo80) | [@halleywj](https://github.com/halleywj) | [@newlyedward](https://github.com/newlyedward) | [@wang-ye](https://github.com/wang-ye) | [@gladmo](https://github.com/gladmo) | [@bernieyangmh](https://github.com/bernieyangmh) | [@PythonYXY](https://github.com/PythonYXY) | [@zuijiawoniu](https://github.com/zuijiawoniu) | [@netAir](https://github.com/netAir) | [@scil](https://github.com/scil) | [@tangrela](https://github.com/tangrela) | [@highroom](https://github.com/highroom) | [@luocaodan](https://github.com/luocaodan) | [@vc5](https://github.com/vc5) | [@1again](https://github.com/1again) | [@obaiyan](https://github.com/obaiyan) | [@zsbh](https://github.com/zsbh) | [@jiannanya](https://github.com/jiannanya) | [@Jerry12228](https://github.com/Jerry12228) | [@zeyudada](https://github.com/zeyudada)
-
-
-### Release Notes
-
-   [changelog](https://jhao104.github.io/proxy_pool/changelog/)
-
-<a href="https://hellogithub.com/repository/92a066e658d147cc8bd8397a1cb88183" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=92a066e658d147cc8bd8397a1cb88183&claim_uid=DR60NequsjP54Lc" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+- 本项目基于 [jhao104/proxy_pool](https://github.com/jhao104/proxy_pool) 二次开发，感谢原作者 [@jhao104](https://github.com/jhao104) 及所有贡献者
+- 免费代理来自各公开代理站点，质量有限，仅供学习研究使用
