@@ -12,6 +12,10 @@
 | `/all` | GET | 返回所有代理 | 可选：`?type=https` 过滤 HTTPS 代理 |
 | `/count` | GET | 返回代理数量统计 | 无 |
 | `/delete` | GET | 删除指定代理 | `?proxy=host:port` |
+| `/fetchers` | GET | 返回全部代理源及启用状态 | 无 |
+| `/refresh` | POST | 手动触发一次抓取+校验（后台执行） | 无 |
+| `/logs` | GET | 日志文件列表 / 指定日志尾部内容 | 可选：`?name=fetch&lines=200`（lines 上限 1000） |
+| `/webui/` | GET | WebUI 管理后台页面 | 无，详见 [WebUI 后台](webui.md) |
 
 ## 调用示例
 

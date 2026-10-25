@@ -8,6 +8,7 @@
 -------------------------------------------------
    Change Activity:
                    2021/3/26: 启动器
+                   2026/10/25: 启动时显示已加载的环境配置文件
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -15,7 +16,7 @@ __author__ = 'JHao'
 import sys
 from db.dbClient import DbClient
 from handler.logHandler import LogHandler
-from handler.configHandler import ConfigHandler
+from handler.configHandler import ConfigHandler, LOADED_ENV_FILES
 
 log = LogHandler('launcher')
 
@@ -47,6 +48,8 @@ def __showVersion():
 
 def __showConfigure():
     conf = ConfigHandler()
+    if LOADED_ENV_FILES:
+        log.info("ProxyPool env files loaded: %s" % ", ".join(LOADED_ENV_FILES))
     log.info("ProxyPool configure HOST: %s" % conf.serverHost)
     log.info("ProxyPool configure PORT: %s" % conf.serverPort)
     exclude = conf.fetcherExclude

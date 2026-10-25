@@ -66,6 +66,9 @@ pip install -r requirements.txt
 
 ```python
 # setting.py 为项目配置文件
+# 也可以复制 .env.example 为 .env 用环境变量方式配置
+# 优先级: 环境变量 > .env.local(本地开发覆盖) > .env(线上默认) > setting.py
+# 本地测试建议把覆盖配置写在 .env.local(不入库); 线上服务器只放 .env
 
 # 配置API服务
 
@@ -126,6 +129,35 @@ docker-compose up -d
 | /all | GET | 获取所有代理 |可选参数: `?type=https` 过滤支持https的代理|
 | /count | GET | 查看代理数量 |None|
 | /delete | GET | 删除代理  |`?proxy=host:ip`|
+| /fetchers | GET | 代理源列表 | None |
+| /refresh | POST | 手动触发一次抓取+校验 | None |
+| /logs | GET | 日志文件列表 / 尾部内容 | 可选: `?name=fetch&lines=200` |
+
+* WebUI 后台
+
+启动web服务后访问 http://127.0.0.1:5010/webui/ 即可使用 WebUI 管理后台（需先构建前端）:
+
+```bash
+cd webui
+npm install
+npm run build
+```
+
+功能：仪表盘（代理统计/协议与来源分布/代理列表筛选搜索删除）、代理源状态、手动触发抓取+校验、运行日志查看。
+
+登录验证（可选，在 `.env` 中配置，详见 [docs/webui.md](docs/webui.md)）:
+
+```bash
+WEBUI_USERNAME=admin       # 默认 admin
+WEBUI_PASSWORD=your-pass   # 设置后启用登录, 留空不启用; 代理API(/get /all /count等)不受影响
+```
+
+前端开发模式（需同时启动 server，热更新）:
+
+```bash
+cd webui
+npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.1:5010
+```
 
 
 * 爬虫使用

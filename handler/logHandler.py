@@ -10,13 +10,16 @@
                    2017/03/06: log handler
                    2017/09/21: 屏幕输出/文件输出 可选(默认屏幕和文件均输出)
                    2020/07/13: Windows下TimedRotatingFileHandler线程不安全, 不再使用
+                   2026/10/24: 新增listLogFiles/readRecentLines 供WebUI日志查看
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
 import os
+import re
 import logging
 import platform
+import collections
 
 from logging.handlers import TimedRotatingFileHandler
 
@@ -90,6 +93,36 @@ class LogHandler(logging.Logger):
         else:
             stream_handler.setLevel(level)
         self.addHandler(stream_handler)
+
+
+def listLogFiles():
+    """
+    列出 log 目录下所有日志文件名(不含扩展名), 供 WebUI 展示
+    :return: list[str] 排序后的日志名列表
+    """
+    if not os.path.isdir(LOG_PATH):
+        return []
+    return sorted(filename[:-len('.log')] for filename in os.listdir(LOG_PATH)
+                  if filename.endswith('.log'))
+
+
+def readRecentLines(name, lines=200):
+    """
+    读取指定日志文件的尾部内容(供 WebUI 日志查看接口使用)
+    :param name: 日志名(不含扩展名), 仅允许字母数字下划线
+    :param lines: 返回的行数
+    :return: (是否成功, 行列表)
+    """
+    if not re.match(r'^[A-Za-z0-9_]+$', name or ''):
+        return False, []
+    file_path = os.path.join(LOG_PATH, name + '.log')
+    if not os.path.isfile(file_path):
+        return False, []
+    result = collections.deque(maxlen=max(1, lines))
+    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+        for line in f:
+            result.append(line.rstrip('\n'))
+    return True, list(result)
 
 
 if __name__ == '__main__':
