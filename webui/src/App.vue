@@ -37,6 +37,7 @@ async function logout() {
         <RouterLink to="/fetchers">代理源</RouterLink>
         <RouterLink to="/tokens">Token</RouterLink>
         <RouterLink to="/logs">日志</RouterLink>
+        <RouterLink to="/api-docs">API 文档</RouterLink>
       </nav>
       <div style="flex: 1"></div>
       <button class="btn" @click="logout">退出登录</button>

@@ -26,12 +26,11 @@ def mocks(app):
 
 class TestIndex:
 
-    def test_index_returns_api_list(self, client):
+    def test_index_redirects_to_webui(self, client):
+        """根路径 302 跳转到 WebUI"""
         resp = client.get("/")
-        assert resp.status_code == 200
-        data = resp.get_json()
-        assert data["code"] == 200
-        assert len(data["data"]["apis"]) > 0
+        assert resp.status_code == 302
+        assert resp.headers["Location"].endswith("/webui/")
 
 
 class TestGet:

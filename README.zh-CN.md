@@ -111,7 +111,7 @@ cd webui && npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.
 
 | 接口 | 方法 | 说明 | 参数 |
 | ----| ---- | ---- | ----|
-| `/` | GET | API 介绍 | 无 |
+| `/` | GET | 302 跳转到 `/webui/`（接口说明在 WebUI「API 文档」页） | 无 |
 | `/get` | GET | 随机获取一个代理（池空 404） | 可选 `?type=https` |
 | `/pop` | GET | 获取并删除一个代理（池空 404） | 可选 `?type=https` |
 | `/all` | GET | 获取所有代理，返回 `{"count": N, "proxies": [...]}` | 可选 `?type=https` |

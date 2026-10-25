@@ -20,7 +20,7 @@
 
 | 接口 | 方法 | 说明 | 参数 |
 |------|------|------|------|
-| `/` | GET | 返回 API 列表 | 无 |
+| `/` | GET | 302 跳转到 `/webui/`（接口说明见 WebUI「API 文档」页） | 无 |
 | `/get` | GET | 随机返回一个代理（池空 404） | 可选：`?type=https` 过滤 HTTPS 代理 |
 | `/pop` | GET | 返回并删除一个代理（池空 404） | 可选：`?type=https` 过滤 HTTPS 代理 |
 | `/all` | GET | 返回所有代理：`{"count": N, "proxies": [...]}` | 可选：`?type=https` 过滤 HTTPS 代理 |
