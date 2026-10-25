@@ -397,13 +397,16 @@ tbody tr:last-child td {
 }
 
 .log-file-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 7px 10px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--text-secondary);
   font-size: 13px;
-  text-align: left;
   cursor: pointer;
 }
 
