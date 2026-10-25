@@ -162,8 +162,8 @@ def get_html():
 # 构建镜像
 docker build -t flyeyas/proxy-pool .
 
-# 推荐: docker compose 部署(配置读 .env, 日志挂到宿主机 ./log/, 崩溃自动拉起)
-cp .env.example .env && vim .env   # DB_CONN 指向你的 Redis
+# 推荐: docker compose 自包含部署(内置Redis+持久化, 配置读 .env, 日志挂到宿主机 ./log/)
+cp .env.example .env && vim .env   # REDIS_PASSWORD 与 DB_CONN 密码一致, WEBUI_PASSWORD
 docker compose up -d --build
 
 # 或手动运行(日志挂载到宿主机目录，可直接查看)

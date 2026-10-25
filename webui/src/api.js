@@ -56,6 +56,12 @@ export const api = {
     }),
   tokenDelete: (token) =>
     request(`/auth/tokens/${encodeURIComponent(token)}/`, { method: 'DELETE' }),
+  tokenRename: (token, name) =>
+    request(`/auth/tokens/${encodeURIComponent(token)}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    }),
   getCount: () => request('/count/'),
   getAll: () => request('/all/'),
   deleteProxy: (proxy) =>

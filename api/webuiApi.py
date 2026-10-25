@@ -34,7 +34,8 @@ from fetcher.baseFetcher import BaseFetcher
 from helper.fetch import _get_sources_dir, _load_module
 from helper.fetcherConfig import (getRuntimeExclude, toggleRuntimeExclude,
                                   getAutoDisable, getFetcherStats, enableFetcher)
-from helper.apiToken import listTokens, generateToken, deleteToken, verifyApiToken
+from helper.apiToken import (listTokens, generateToken, deleteToken,
+                             verifyApiToken, renameToken)
 from api.response import apiOk, apiError
 
 webui_bp = Blueprint('webui', __name__)
@@ -188,6 +189,19 @@ def tokenDelete(token):
     if not deleteToken(token):
         return apiError(404, "token not found")
     return apiOk(message="deleted")
+
+
+@webui_bp.route('/auth/tokens/<token>/', methods=['PATCH'])
+def tokenRename(token):
+    """修改 token 备注名: body {"name": ...}"""
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return apiError(400, "name is required")
+    item = renameToken(token, name)
+    if item is None:
+        return apiError(404, "token not found")
+    return apiOk({"token": item})
 
 
 @webui_bp.route('/webui/')

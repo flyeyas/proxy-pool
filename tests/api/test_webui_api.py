@@ -332,6 +332,26 @@ class TestApiToken:
         assert resp.status_code == 404
         assert resp.get_json()["code"] == 404
 
+    def test_token_rename(self, client):
+        """PATCH 修改 token 备注名"""
+        self._login(client)
+        resp = client.post("/auth/tokens/", json={"name": "old", "expire_days": 1})
+        token = resp.get_json()["data"]["token"]["token"]
+
+        resp = client.patch("/auth/tokens/%s/" % token, json={"name": "new-name"})
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["token"]["name"] == "new-name"
+        names = [t["name"] for t in
+                 client.get("/auth/tokens/").get_json()["data"]["tokens"]]
+        assert "new-name" in names
+
+        # 空名 400; 不存在 404
+        assert client.patch("/auth/tokens/%s/" % token,
+                            json={"name": ""}).status_code == 400
+        assert client.patch("/auth/tokens/pp_none/",
+                            json={"name": "x"}).status_code == 404
+        client.delete("/auth/tokens/%s/" % token)
+
     def test_expired_token_rejected(self, client, runtime_config):
         """过期 token 不再授权"""
         import json as jsonlib

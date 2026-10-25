@@ -16,7 +16,8 @@ import json
 import pytest
 
 import helper.runtimeConfig as runtime_config_mod
-from helper.apiToken import listTokens, generateToken, deleteToken, verifyApiToken
+from helper.apiToken import (listTokens, generateToken, deleteToken,
+                             verifyApiToken, renameToken)
 
 
 @pytest.fixture(autouse=True)
@@ -57,6 +58,19 @@ class TestApiToken:
         assert deleteToken(item["token"]) is True
         assert verifyApiToken(item["token"]) is False
         assert deleteToken(item["token"]) is False
+
+    def test_rename_token(self):
+        item = generateToken("old-name")
+        updated = renameToken(item["token"], "new-name")
+        assert updated["name"] == "new-name"
+        assert listTokens()[0]["name"] == "new-name"
+
+    def test_rename_token_not_found(self):
+        assert renameToken("pp_not_exists", "x") is None
+
+    def test_rename_empty_name_falls_back(self):
+        item = generateToken("a")
+        assert renameToken(item["token"], "")["name"] == "未命名"
 
     def test_tokens_coexist_with_fetcher_exclude(self, tmp_config_file):
         """token 与代理源黑名单共存于同一配置文件, 互不覆盖"""
