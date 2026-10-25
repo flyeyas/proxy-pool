@@ -140,8 +140,11 @@ def _authGuard():
 
 @webui_bp.route('/auth/status/')
 def authStatus():
-    """前端启动时查询: 是否启用登录/是否已登录"""
-    return apiOk({"required": _authRequired(), "logged_in": bool(session.get(_SESSION_KEY))})
+    """前端启动时查询: 是否启用登录/是否已登录/程序版本"""
+    import setting
+    return apiOk({"required": _authRequired(),
+                  "logged_in": bool(session.get(_SESSION_KEY)),
+                  "version": setting.VERSION})
 
 
 @webui_bp.route('/auth/login/', methods=['POST'])

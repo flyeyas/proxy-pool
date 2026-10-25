@@ -12,6 +12,7 @@ api
   .then((s) => {
     auth.required = !!s.data.required
     auth.loggedIn = !!s.data.logged_in
+    auth.version = s.data.version || ''
   })
   .catch(() => {})
   .finally(() => {
