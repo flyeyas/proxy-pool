@@ -4,6 +4,8 @@ site/
 *.pyc.*
 __pycache__/
 *.log
+*.log.*
+log/
 .tox
 .claude/
 .zcode/
