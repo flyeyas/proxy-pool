@@ -8,6 +8,7 @@ export const router = createRouter({
     { path: '/', name: 'dashboard', component: DashboardView },
     { path: '/login', name: 'login', component: () => import('./views/LoginView.vue') },
     { path: '/fetchers', name: 'fetchers', component: () => import('./views/FetchersView.vue') },
+    { path: '/tokens', name: 'tokens', component: () => import('./views/TokensView.vue') },
     { path: '/logs', name: 'logs', component: () => import('./views/LogsView.vue') }
   ]
 })

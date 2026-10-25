@@ -142,7 +142,7 @@ class TestFetcherToggle:
     def runtime_config(self, tmp_path, monkeypatch):
         """隔离运行时配置文件, 避免写入项目根目录"""
         path = tmp_path / "runtime_config.json"
-        monkeypatch.setattr("helper.fetcherConfig.CONFIG_FILE", str(path))
+        monkeypatch.setattr("helper.runtimeConfig.CONFIG_FILE", str(path))
         return path
 
     def test_fetchers_returns_runtime_fields(self, client, runtime_config):
@@ -180,7 +180,7 @@ class TestFetcherToggle:
     def test_toggle_requires_login_when_auth_on(self, client, monkeypatch, tmp_path):
         """开启登录后 toggle 接口需要登录"""
         monkeypatch.setenv("WEBUI_PASSWORD", "secret123")
-        monkeypatch.setattr("helper.fetcherConfig.CONFIG_FILE",
+        monkeypatch.setattr("helper.runtimeConfig.CONFIG_FILE",
                             str(tmp_path / "runtime_config.json"))
         resp = client.post("/fetchers/toggle/",
                            json={"class_name": "KuaidailiFetcher", "enable": False})
@@ -218,12 +218,73 @@ class TestWebuiAuth:
         assert client.get("/fetchers/").status_code == 401
 
     def test_protected_paths_when_auth_on(self, client, monkeypatch):
-        """开启登录后管理接口被拦, 对外代理API不受影响"""
+        """开启登录后管理与数据接口均被拦"""
         monkeypatch.setenv("WEBUI_PASSWORD", "secret123")
         assert client.get("/delete/?proxy=1.2.3.4:8080").status_code == 401
         assert client.post("/refresh/").status_code == 401
-        # 对外只读API保持公开
-        assert client.get("/count/").status_code == 200
-        assert client.get("/all/").status_code == 200
+        # 数据接口(代理API)同样需要授权
+        assert client.get("/count/").status_code == 401
+        assert client.get("/all/").status_code == 401
         # GET /refresh/ 为原有stub, 保持公开
         assert client.get("/refresh/").status_code == 200
+
+
+class TestApiToken:
+    """数据接口授权 + API Token 流程"""
+
+    @pytest.fixture(autouse=True)
+    def runtime_config(self, tmp_path, monkeypatch):
+        path = tmp_path / "runtime_config.json"
+        monkeypatch.setattr("helper.runtimeConfig.CONFIG_FILE", str(path))
+        return path
+
+    @pytest.fixture(autouse=True)
+    def auth_enabled(self, monkeypatch):
+        """统一开启登录, 账号 admin/secret123"""
+        monkeypatch.setenv("WEBUI_USERNAME", "admin")
+        monkeypatch.setenv("WEBUI_PASSWORD", "secret123")
+
+    def _login(self, client):
+        client.post("/auth/login/", json={"username": "admin", "password": "secret123"})
+
+    def test_data_api_requires_auth(self, client):
+        """开启登录后数据接口无凭证 401, 登录会话可用"""
+        assert client.get("/count/").status_code == 401
+        assert client.get("/count/?token=bad").status_code == 401
+        self._login(client)
+        assert client.get("/count/").status_code == 200
+
+    def test_token_grants_api_access(self, client):
+        """token 通过参数/请求头授权数据接口; 删除后失效"""
+        self._login(client)
+        resp = client.post("/auth/tokens/create/",
+                           json={"name": "spider", "expire_days": 7})
+        token = resp.get_json()["token"]["token"]
+        client.get("/auth/logout/")
+
+        assert client.get("/all/").status_code == 401
+        assert client.get("/all/?token=" + token).status_code == 200
+        assert client.get("/count/",
+                          headers={"Authorization": "Bearer " + token}).status_code == 200
+
+        # token 不能管理 token(仅登录会话可管理)
+        assert client.post("/auth/tokens/delete/",
+                           json={"token": token}).status_code == 401
+
+        self._login(client)
+        client.post("/auth/tokens/delete/", json={"token": token})
+        client.get("/auth/logout/")
+        assert client.get("/all/?token=" + token).status_code == 401
+
+    def test_expired_token_rejected(self, client, runtime_config):
+        """过期 token 不再授权"""
+        import json as jsonlib
+        self._login(client)
+        resp = client.post("/auth/tokens/create/",
+                           json={"name": "old", "expire_days": 1})
+        token = resp.get_json()["token"]["token"]
+        config = jsonlib.loads(runtime_config.read_text(encoding="utf-8"))
+        config["api_tokens"][0]["expires_at"] = "2000-01-01 00:00:00"
+        runtime_config.write_text(jsonlib.dumps(config), encoding="utf-8")
+        client.get("/auth/logout/")
+        assert client.get("/count/?token=" + token).status_code == 401

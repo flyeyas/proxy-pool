@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { api } from '../api'
 import { usePolling } from '../composables/usePolling'
+import AppSelect from '../components/AppSelect.vue'
 
 const files = ref([])
 const current = ref('')
@@ -73,9 +74,11 @@ watch([current, lines], () => {
             {{ current ? `${current}.log` : '日志内容' }}
           </h3>
           <div class="spacer"></div>
-          <select v-model.number="lines">
-            <option v-for="n in lineOptions" :key="n" :value="n">尾部 {{ n }} 行</option>
-          </select>
+          <AppSelect
+            v-model="lines"
+            :min-width="'110px'"
+            :options="lineOptions.map((n) => ({ value: n, label: `尾部 ${n} 行` }))"
+          />
           <button class="btn" :class="{ active: polling.running.value }" @click="polling.toggle()">
             {{ polling.running.value ? '⏸ 暂停' : '▶ 自动' }}
           </button>

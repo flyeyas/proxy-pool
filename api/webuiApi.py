@@ -26,6 +26,7 @@ from handler.configHandler import ConfigHandler
 from fetcher.baseFetcher import BaseFetcher
 from helper.fetch import _get_sources_dir, _load_module
 from helper.fetcherConfig import getRuntimeExclude, toggleRuntimeExclude
+from helper.apiToken import listTokens, generateToken, deleteToken, verifyApiToken
 
 webui_bp = Blueprint('webui', __name__)
 
@@ -40,9 +41,9 @@ _refresh_running = False
 
 _LOG_NAME_PATTERN = re.compile(r'^[A-Za-z0-9_]+$')
 
-# 登录后才能访问的管理类接口(对外的 /get /all /count 等代理API不受影响)
-# 注意使用前缀匹配, 覆盖 /fetchers/ 与 /fetchers/toggle/ 等子路径
-_PROTECTED_PREFIXES = ('/fetchers', '/logs', '/delete/')
+# 需要授权才能访问的接口(前缀匹配): 代理数据接口 + 管理接口 + token 管理
+_PROTECTED_PREFIXES = ('/get', '/pop', '/all', '/count',
+                       '/fetchers', '/logs', '/delete', '/auth/tokens')
 _SESSION_KEY = 'webui_login'
 
 
@@ -51,15 +52,34 @@ def _authRequired():
     return bool(ConfigHandler().webuiPassword)
 
 
+def _requestToken():
+    """从 Authorization: Bearer 头或 ?token= 参数中取 API Token"""
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        return auth_header[len('Bearer '):].strip()
+    return (request.args.get('token') or '').strip()
+
+
 @webui_bp.before_app_request
 def _authGuard():
-    """全局鉴权拦截: 未登录时返回 401, 前端跳转登录页"""
+    """
+    全局鉴权拦截(需登录或有效 token):
+    - WebUI 走登录会话; 外部程序直连代理接口用 ?token= 或 Bearer 头
+    - /auth/tokens 为 token 管理接口, 仅允许会话登录, 不允许 token 自授权
+    """
     if not _authRequired():
         return None
     path = request.path
-    if path.startswith(_PROTECTED_PREFIXES) or (path == '/refresh/' and request.method == 'POST'):
-        if not session.get(_SESSION_KEY):
-            return {"code": 401, "src": "unauthorized"}, 401
+    needs_auth = path.startswith(_PROTECTED_PREFIXES) \
+        or (path == '/refresh/' and request.method == 'POST')
+    if not needs_auth:
+        return None
+    if not path.startswith('/auth/tokens'):
+        token = _requestToken()
+        if token and verifyApiToken(token):
+            return None
+    if not session.get(_SESSION_KEY):
+        return {"code": 401, "src": "unauthorized"}, 401
     return None
 
 
@@ -87,6 +107,36 @@ def authLogin():
 def authLogout():
     session.clear()
     return {"code": 0, "src": "ok"}
+
+
+@webui_bp.route('/auth/tokens/')
+def tokenList():
+    """token 列表"""
+    return {"tokens": listTokens()}
+
+
+@webui_bp.route('/auth/tokens/create/', methods=['POST'])
+def tokenCreate():
+    """生成 token: name 备注, expire_days 有效期天数(0=永久, 上限10年)"""
+    data = request.get_json(silent=True) or {}
+    name = (data.get('name') or '').strip()
+    try:
+        expire_days = int(data.get('expire_days', 0))
+    except (TypeError, ValueError):
+        expire_days = 0
+    expire_days = max(0, min(expire_days, 3650))
+    item = generateToken(name, expire_days)
+    return {"code": 0, "src": "ok", "token": item}
+
+
+@webui_bp.route('/auth/tokens/delete/', methods=['POST'])
+def tokenDelete():
+    data = request.get_json(silent=True) or {}
+    token = (data.get('token') or '').strip()
+    if not token:
+        return {"code": 1, "src": "invalid token"}, 400
+    removed = deleteToken(token)
+    return {"code": 0, "src": "ok" if removed else "not found"}
 
 
 @webui_bp.route('/webui/')

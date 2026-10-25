@@ -15,7 +15,7 @@ __author__ = 'flyeyas'
 import json
 import pytest
 
-import helper.fetcherConfig as fetcher_config
+import helper.runtimeConfig as runtime_config_mod
 from helper.fetcherConfig import (
     getRuntimeExclude, setRuntimeExclude, toggleRuntimeExclude
 )
@@ -25,7 +25,7 @@ from helper.fetcherConfig import (
 def tmp_config_file(tmp_path, monkeypatch):
     """每个测试使用独立的临时配置文件"""
     path = tmp_path / "runtime_config.json"
-    monkeypatch.setattr(fetcher_config, "CONFIG_FILE", str(path))
+    monkeypatch.setattr(runtime_config_mod, "CONFIG_FILE", str(path))
     return path
 
 

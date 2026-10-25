@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { api } from '../api'
 import { usePolling } from '../composables/usePolling'
+import AppSelect from '../components/AppSelect.vue'
 
 const stats = ref({ count: 0, http_type: {}, source: {} })
 const proxies = ref([])
@@ -140,10 +141,13 @@ async function removeProxy(proxy) {
           {{ filteredProxies.length }} / {{ proxies.length }}
         </span>
         <div class="spacer"></div>
-        <select v-model="filterType">
-          <option value="all">全部协议</option>
-          <option value="https">仅 HTTPS</option>
-        </select>
+        <AppSelect
+          v-model="filterType"
+          :options="[
+            { value: 'all', label: '全部协议' },
+            { value: 'https', label: '仅 HTTPS' }
+          ]"
+        />
         <input type="text" v-model="keyword" placeholder="搜索 ip / 来源 / 地区…" style="width: 200px" />
       </div>
       <div v-if="message" class="flash" :class="{ err: messageIsErr }" style="margin-bottom: 12px">

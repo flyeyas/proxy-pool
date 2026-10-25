@@ -33,6 +33,19 @@ export const api = {
       body: JSON.stringify({ username, password })
     }),
   logout: () => request('/auth/logout/'),
+  tokenList: () => request('/auth/tokens/'),
+  tokenCreate: (name, expireDays) =>
+    request('/auth/tokens/create/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, expire_days: expireDays })
+    }),
+  tokenDelete: (token) =>
+    request('/auth/tokens/delete/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    }),
   getCount: () => request('/count/'),
   getAll: () => request('/all/'),
   deleteProxy: (proxy) => request(`/delete/?proxy=${encodeURIComponent(proxy)}`),
