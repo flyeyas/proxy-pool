@@ -30,8 +30,8 @@ class TestIndex:
         resp = client.get("/")
         assert resp.status_code == 200
         data = resp.get_json()
-        assert "url" in data
-        assert len(data["url"]) > 0
+        assert data["code"] == 200
+        assert len(data["data"]["apis"]) > 0
 
 
 class TestGet:
@@ -43,17 +43,19 @@ class TestGet:
         resp = client.get("/get/")
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["proxy"] == "1.2.3.4:8080"
-        assert data["https"] is False
+        assert data["code"] == 200
+        assert data["data"]["proxy"] == "1.2.3.4:8080"
+        assert data["data"]["https"] is False
 
     def test_get_no_proxy(self, client, mocks):
         mocks["get"].return_value = None
 
         resp = client.get("/get/")
-        assert resp.status_code == 200
+        assert resp.status_code == 404
         data = resp.get_json()
-        assert data["code"] == 0
-        assert data["src"] == "no proxy"
+        assert data["code"] == 404
+        assert data["data"] is None
+        assert data["message"]
 
     def test_get_https_filter(self, client, mocks):
         proxy = Proxy("5.6.7.8:443", source="test", https=True)
@@ -62,7 +64,7 @@ class TestGet:
         resp = client.get("/get/?type=https")
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["https"] is True
+        assert data["data"]["https"] is True
         mocks["get"].assert_called_with(True)
 
     def test_get_http_filter(self, client, mocks):
@@ -81,19 +83,19 @@ class TestPop:
         resp = client.get("/pop/")
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["proxy"] == "1.2.3.4:8080"
+        assert data["data"]["proxy"] == "1.2.3.4:8080"
 
     def test_pop_no_proxy(self, client, mocks):
         mocks["pop"].return_value = None
 
         resp = client.get("/pop/")
-        data = resp.get_json()
-        assert data["code"] == 0
+        assert resp.status_code == 404
+        assert resp.get_json()["code"] == 404
 
 
 class TestAll:
 
-    def test_all_returns_list(self, client, mocks):
+    def test_all_returns_proxies(self, client, mocks):
         proxies = [
             Proxy("1.2.3.4:8080", source="test"),
             Proxy("5.6.7.8:443", source="test", https=True),
@@ -103,29 +105,50 @@ class TestAll:
         resp = client.get("/all/")
         assert resp.status_code == 200
         data = resp.get_json()
-        assert len(data) == 2
-        assert data[0]["proxy"] == "1.2.3.4:8080"
-        assert data[1]["proxy"] == "5.6.7.8:443"
+        assert data["code"] == 200
+        assert data["data"]["count"] == 2
+        assert data["data"]["proxies"][0]["proxy"] == "1.2.3.4:8080"
+        assert data["data"]["proxies"][1]["proxy"] == "5.6.7.8:443"
 
     def test_all_empty(self, client, mocks):
         mocks["getAll"].return_value = []
 
         resp = client.get("/all/")
         data = resp.get_json()
-        assert data == []
+        assert data["data"] == {"count": 0, "proxies": []}
 
 
 class TestDelete:
 
     def test_delete_calls_handler(self, client, mocks):
-        mocks["delete"].return_value = True
+        mocks["delete"].return_value = 1
 
         resp = client.get("/delete/?proxy=1.2.3.4:8080")
         assert resp.status_code == 200
         data = resp.get_json()
-        assert data["code"] == 0
-        assert data["src"] is True
+        assert data["code"] == 200
+        assert data["data"] == {"proxy": "1.2.3.4:8080", "deleted": True}
         mocks["delete"].assert_called_once()
+
+    def test_delete_not_found(self, client, mocks):
+        mocks["delete"].return_value = 0
+
+        resp = client.get("/delete/?proxy=1.2.3.4:8080")
+        assert resp.status_code == 404
+        assert resp.get_json()["code"] == 404
+
+    def test_delete_missing_param(self, client):
+        resp = client.get("/delete/")
+        assert resp.status_code == 400
+        assert resp.get_json()["code"] == 400
+
+    def test_delete_with_delete_method(self, client, mocks):
+        """规范方法: DELETE 请求同样支持"""
+        mocks["delete"].return_value = 1
+
+        resp = client.delete("/delete/?proxy=1.2.3.4:8080")
+        assert resp.status_code == 200
+        assert resp.get_json()["data"] == {"proxy": "1.2.3.4:8080", "deleted": True}
 
 
 class TestCount:
@@ -139,7 +162,7 @@ class TestCount:
 
         resp = client.get("/count/")
         assert resp.status_code == 200
-        data = resp.get_json()
+        data = resp.get_json()["data"]
         assert data["count"] == 2
         assert data["http_type"]["http"] == 1
         assert data["http_type"]["https"] == 1
@@ -150,18 +173,10 @@ class TestCount:
         mocks["getAll"].return_value = []
 
         resp = client.get("/count/")
-        data = resp.get_json()
+        data = resp.get_json()["data"]
         assert data["count"] == 0
         assert data["http_type"] == {}
         assert data["source"] == {}
-
-
-class TestRefresh:
-
-    def test_refresh_returns_success(self, client):
-        resp = client.get("/refresh/")
-        assert resp.status_code == 200
-        assert b"success" in resp.data
 
 
 class TestJsonResponse:

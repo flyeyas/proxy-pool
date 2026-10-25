@@ -1,5 +1,5 @@
 # ---------- build webui ----------
-FROM node:20-alpine AS webui-builder
+FROM node:25-alpine AS webui-builder
 
 WORKDIR /webui
 
@@ -12,16 +12,19 @@ COPY webui/ ./
 RUN npm run build
 
 # ---------- runtime ----------
-FROM python:3.10-alpine
+FROM python:3.13-alpine
 
-LABEL maintainer="jhao104 <j_hao104@163.com>"
+LABEL org.opencontainers.image.authors="flyeyas" \
+      org.opencontainers.image.source="https://github.com/flyeyas/proxy-pool" \
+      org.opencontainers.image.title="proxy-pool" \
+      org.opencontainers.image.description="爬虫代理IP池: 定时抓取验证免费代理, 提供RESTful API与WebUI管理后台"
 
 WORKDIR /app
 
 COPY ./requirements.txt .
 
-# timezone and init process
-RUN apk add -U tzdata tini && \
+# timezone and init process (bash: py3.13+ 的 alpine 镜像不再内置, 入口脚本需要)
+RUN apk add -U tzdata tini bash && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     apk del tzdata
 

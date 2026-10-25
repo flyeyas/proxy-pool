@@ -27,6 +27,7 @@ from util.six import iteritems
 from helper.proxy import Proxy
 from handler.proxyHandler import ProxyHandler
 from handler.configHandler import ConfigHandler
+from api.response import apiOk, apiError
 from api.webuiApi import webui_bp
 
 app = Flask(__name__)
@@ -52,56 +53,55 @@ app.secret_key = os.getenv('WEBUI_SECRET_KEY') or hashlib.sha256(
     ('proxy_pool_webui:%s:%s' % (conf.webuiUsername, conf.webuiPassword)).encode()).hexdigest()
 
 api_list = [
-    {"url": "/get", "params": "type: ''https'|''", "desc": "get a proxy"},
-    {"url": "/pop", "params": "", "desc": "get and delete a proxy"},
-    {"url": "/delete", "params": "proxy: 'e.g. 127.0.0.1:8080'", "desc": "delete an unable proxy"},
-    {"url": "/all", "params": "type: ''https'|''", "desc": "get all proxy from proxy pool"},
-    {"url": "/count", "params": "", "desc": "return proxy count"},
-    {"url": "/fetchers", "params": "", "desc": "list all proxy fetchers (for WebUI)"},
-    {"url": "/refresh", "params": "method: 'POST'", "desc": "trigger a fetch and check run (for WebUI)"},
-    {"url": "/logs", "params": "name, lines", "desc": "list log files / read recent log lines (for WebUI)"},
-    {"url": "/webui", "params": "", "desc": "WebUI dashboard"},
-    # 'refresh': 'refresh proxy pool',
+    {"url": "/", "method": "GET", "desc": "api list"},
+    {"url": "/get", "method": "GET", "params": "type: 'https'|''", "desc": "get a random proxy"},
+    {"url": "/pop", "method": "GET", "params": "type: 'https'|''", "desc": "get and remove a proxy"},
+    {"url": "/all", "method": "GET", "params": "type: 'https'|''", "desc": "get all proxies"},
+    {"url": "/count", "method": "GET", "desc": "proxy count stats"},
+    {"url": "/delete", "method": "DELETE", "params": "proxy: 'e.g. 127.0.0.1:8080'", "desc": "delete a proxy"},
+    {"url": "/fetchers", "method": "GET", "desc": "list all proxy fetchers (for WebUI)"},
+    {"url": "/fetchers/<class_name>", "method": "PATCH", "desc": "enable/disable a fetcher (for WebUI)"},
+    {"url": "/refresh", "method": "POST", "desc": "trigger a fetch and check run (for WebUI)"},
+    {"url": "/logs", "method": "GET", "desc": "list log files / read recent log lines (for WebUI)"},
+    {"url": "/webui", "method": "GET", "desc": "WebUI dashboard"},
 ]
 
 
 @app.route('/')
 def index():
-    return {'url': api_list}
+    return apiOk({"apis": api_list})
 
 
 @app.route('/get/')
 def get():
     https = request.args.get("type", "").lower() == 'https'
     proxy = proxy_handler.get(https)
-    return proxy.to_dict if proxy else {"code": 0, "src": "no proxy"}
+    return apiOk(proxy.to_dict) if proxy else apiError(404, "no proxy available")
 
 
 @app.route('/pop/')
 def pop():
     https = request.args.get("type", "").lower() == 'https'
     proxy = proxy_handler.pop(https)
-    return proxy.to_dict if proxy else {"code": 0, "src": "no proxy"}
-
-
-@app.route('/refresh/')
-def refresh():
-    # TODO refresh会有守护程序定时执行，由api直接调用性能较差，暂不使用
-    return 'success'
+    return apiOk(proxy.to_dict) if proxy else apiError(404, "no proxy available")
 
 
 @app.route('/all/')
 def getAll():
     https = request.args.get("type", "").lower() == 'https'
     proxies = proxy_handler.getAll(https)
-    return jsonify([_.to_dict for _ in proxies])
+    return apiOk({"count": len(proxies), "proxies": [_.to_dict for _ in proxies]})
 
 
-@app.route('/delete/', methods=['GET'])
+@app.route('/delete/', methods=['DELETE', 'GET'])
 def delete():
     proxy = request.args.get('proxy')
-    status = proxy_handler.delete(Proxy(proxy))
-    return {"code": 0, "src": status}
+    if not proxy:
+        return apiError(400, "proxy parameter is required")
+    deleted = proxy_handler.delete(Proxy(proxy))
+    if deleted:
+        return apiOk({"proxy": proxy, "deleted": True})
+    return apiError(404, "proxy not found in pool")
 
 
 @app.route('/count/')
@@ -114,7 +114,7 @@ def getCount():
         http_type_dict[http_type] = http_type_dict.get(http_type, 0) + 1
         for source in proxy.source.split('/'):
             source_dict[source] = source_dict.get(source, 0) + 1
-    return {"http_type": http_type_dict, "source": source_dict, "count": len(proxies)}
+    return apiOk({"http_type": http_type_dict, "source": source_dict, "count": len(proxies)})
 
 
 def runFlask():

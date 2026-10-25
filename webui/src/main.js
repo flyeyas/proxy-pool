@@ -10,8 +10,8 @@ import './assets/main.css'
 api
   .authStatus()
   .then((s) => {
-    auth.required = !!s.required
-    auth.loggedIn = !!s.logged_in
+    auth.required = !!s.data.required
+    auth.loggedIn = !!s.data.logged_in
   })
   .catch(() => {})
   .finally(() => {

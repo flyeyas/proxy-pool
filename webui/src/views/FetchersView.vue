@@ -18,7 +18,7 @@ async function load() {
   error.value = ''
   try {
     const r = await api.fetchers()
-    fetchers.value = r.fetchers || []
+    fetchers.value = (r.data && r.data.fetchers) || []
   } catch (e) {
     error.value = e.message
   } finally {
