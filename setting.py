@@ -48,6 +48,9 @@ TABLE_NAME = 'use_proxy'
 # 如需临时禁用某个 fetcher，在下方黑名单中添加类名（不改源文件）
 PROXY_FETCHER_EXCLUDE = []
 
+# 代理源连续抓取失败(异常或0产出)达到该次数后自动禁用(WebUI中标注原因, 可手动重新启用), 0=关闭自动禁用
+FETCHER_AUTO_DISABLE_FAILS = 5
+
 # ############# proxy validator #################
 # 代理验证目标网站
 HTTP_URL = "http://httpbin.org"

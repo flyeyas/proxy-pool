@@ -115,10 +115,18 @@ class TestDiscoverFetchers:
 
 class TestThreadFetcher:
 
+    @pytest.fixture(autouse=True)
+    def tmp_runtime_config(self, tmp_path, monkeypatch):
+        """隔离运行时配置文件(_ThreadFetcher 现在会写入抓取统计)"""
+        import helper.runtimeConfig as runtime_config_mod
+        monkeypatch.setattr(
+            runtime_config_mod, "CONFIG_FILE", str(tmp_path / "runtime_config.json"))
+
     def test_collects_proxies(self):
         """fetcher.fetch() yield 代理 -> proxy_dict 有值"""
         mock_cls = MagicMock()
         mock_cls.name = "test_fetcher"
+        mock_cls.__name__ = "TestFetcher"
         mock_cls.return_value.fetch.return_value = ["1.2.3.4:8080", "5.6.7.8:443"]
 
         proxy_dict = {}
@@ -133,6 +141,7 @@ class TestThreadFetcher:
         """同一代理出现两次 -> add_source 被调用"""
         mock_cls = MagicMock()
         mock_cls.name = "test_fetcher"
+        mock_cls.__name__ = "TestFetcher"
         mock_cls.return_value.fetch.return_value = ["1.2.3.4:8080", "1.2.3.4:8080"]
 
         proxy_dict = {}
@@ -142,3 +151,19 @@ class TestThreadFetcher:
         assert "1.2.3.4:8080" in proxy_dict
         # source 应该包含两次 "test_fetcher"（add_source 去重，但只出现一次）
         assert "test_fetcher" in proxy_dict["1.2.3.4:8080"].source
+
+    def test_zero_output_recorded_as_fail(self):
+        """抓取 0 产出记为失败统计"""
+        from helper.runtimeConfig import readConfig
+        mock_cls = MagicMock()
+        mock_cls.name = "test_fetcher"
+        mock_cls.__name__ = "ZeroFetcher"
+        mock_cls.return_value.fetch.return_value = []
+
+        thread = _ThreadFetcher(mock_cls, {})
+        thread.run()
+
+        stat = readConfig().get("fetcher_stats", {}).get("ZeroFetcher")
+        assert stat is not None
+        assert stat["fails"] == 1
+        assert stat["total_fails"] == 1
