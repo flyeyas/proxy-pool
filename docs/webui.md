@@ -44,8 +44,23 @@ WEBUI_PASSWORD=your-password  # 设置后启用登录验证, 留空则不启用
 启用后：
 
 - 浏览器访问 `/webui/` 会先跳转登录页
-- 管理类接口（`/fetchers`、`/logs`、`POST /refresh`、`/delete`）未登录返回 401
-- 对外的代理 API（`/get`、`/pop`、`/all`、`/count`）不受影响，爬虫可匿名调用
+- 所有数据与管理接口（`/get`、`/pop`、`/all`、`/count`、`/delete`、`/fetchers`、`/logs`、`POST /refresh`、`/auth/tokens`）未授权返回 401
+- 授权方式两种：**WebUI 登录会话**（浏览器自动携带）或 **API Token**（外部程序请求时加 `?token=xxx` 或 `Authorization: Bearer xxx` 头）
+
+## API Token
+
+供爬虫等外部程序直接调用代理接口的授权凭证，在 WebUI「Token」页管理：
+
+- **生成**：填写备注名 + 选择有效期（7 天 / 30 天 / 90 天 / 1 年 / 永久），点击生成，支持一键复制
+- **使用**：请求时加 `?token=xxx` 参数或 `Authorization: Bearer xxx` 请求头
+- **删除**：立即失效；过期后自动失效（状态列标注"已过期"）
+- Token 与代理源黑名单同存于 `runtime_config.json`（不入库），token 管理接口仅允许登录会话操作（token 自身不能增删 token）
+
+```bash
+# 示例
+curl "http://127.0.0.1:5010/get/?token=pp_xxxxx"
+curl -H "Authorization: Bearer pp_xxxxx" http://127.0.0.1:5010/count/
+```
 
 ## 前端开发
 

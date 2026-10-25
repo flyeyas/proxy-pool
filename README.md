@@ -78,9 +78,10 @@ cd webui && npm install && npm run build
 
 - **仪表盘**：代理总数 / HTTP / HTTPS / 来源数；协议与来源分布条形图；代理列表（协议筛选、关键字搜索、单条删除）；5 秒自动刷新；「立即抓取并校验」按钮
 - **代理源**：全部代理源状态，支持**后台启停开关**（写入运行时黑名单 `runtime_config.json`，与 `setting.py` 黑名单并集生效，热生效）
+- **Token**：生成/删除 **API Token**（供爬虫等外部程序直连接口），可设置有效期（7 天 / 30 天 / 90 天 / 1 年 / 永久），支持一键复制
 - **日志**：查看 `fetch` / `checker` / `scheduler` 等日志尾部内容，行数可选、自动刷新
 
-在 `.env` 中设置 `WEBUI_PASSWORD` 即启用登录验证：管理类接口（`/fetchers`、`/logs`、`/delete`、`POST /refresh`）需登录，对外代理 API（`/get` `/all` `/count` 等）不受影响。
+在 `.env` 中设置 `WEBUI_PASSWORD` 即启用登录验证：所有数据与管理接口（含 `/get` `/all` `/count` 等）均需授权——WebUI 走登录会话，外部程序走 API Token。
 
 前端开发模式（需同时运行 server）：
 
@@ -90,7 +91,7 @@ cd webui && npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.
 
 ## API 接口
 
-启动 `server` 后提供如下接口：
+启动 `server` 后提供如下接口。**启用登录后**（`.env` 设置 `WEBUI_PASSWORD`），下表接口均需授权——WebUI 内自动使用登录会话；**外部程序直连需带 API Token**（请求加 `?token=xxx` 或 `Authorization: Bearer xxx` 头，Token 在 WebUI「Token」页生成，可设置有效期）：
 
 | 接口 | 方法 | 说明 | 参数 |
 | ----| ---- | ---- | ----|
@@ -110,13 +111,16 @@ cd webui && npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.
 ```python
 import requests
 
+TOKEN = "pp_xxxxxxxxxx"   # 在 WebUI「Token」页生成
+BASE = "http://127.0.0.1:5010"
+
 
 def get_proxy():
-    return requests.get("http://127.0.0.1:5010/get/").json()
+    return requests.get(BASE + "/get/", params={"token": TOKEN}).json()
 
 
 def delete_proxy(proxy):
-    requests.get("http://127.0.0.1:5010/delete/?proxy={}".format(proxy))
+    requests.get(BASE + "/delete/", params={"proxy": proxy, "token": TOKEN})
 
 
 def get_html():

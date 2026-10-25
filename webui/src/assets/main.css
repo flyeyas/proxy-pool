@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light dark;
   --bg: #f5f6f8;
   --card-bg: #ffffff;
   --border: #e4e7ec;
@@ -222,6 +223,19 @@ select:focus {
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
+/* 下拉框: 去原生外观, 统一高度/圆角/箭头, 与输入框按钮对齐 */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 32px;
+  padding: 0 30px 0 10px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23646a73" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 12px 12px;
+  cursor: pointer;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -417,6 +431,119 @@ tbody tr:last-child td {
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* ---------- 自定义下拉框 ---------- */
+
+.app-select {
+  position: relative;
+  display: inline-block;
+  font-size: 13px;
+}
+
+.app-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.app-select-trigger:hover {
+  border-color: var(--text-secondary);
+}
+
+.app-select-trigger.open,
+.app-select-trigger:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+  outline: none;
+}
+
+.app-select-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-select-arrow {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: transform 0.15s;
+}
+
+.app-select-arrow.open {
+  transform: rotate(180deg);
+}
+
+.app-select-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.app-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  z-index: 41;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  max-height: 260px;
+  overflow: auto;
+}
+
+.app-select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.app-select-option:hover {
+  background: var(--primary-soft);
+}
+
+.app-select-option.active {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.app-select-check {
+  font-size: 12px;
+}
+
+.select-fade-enter-active,
+.select-fade-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.select-fade-enter-from,
+.select-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* ---------- 登录页 ---------- */

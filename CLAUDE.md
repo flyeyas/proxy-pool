@@ -72,7 +72,7 @@ tests/
   - `/fetchers`：全部代理源及 enabled/黑名单状态（黑名单按类名 `__name__` 匹配）；`POST /fetchers/toggle` 后台启停代理源（运行时黑名单存 `runtime_config.json`，与 `setting.PROXY_FETCHER_EXCLUDE` 并集生效，见 `helper/fetcherConfig.py`）
   - `/refresh`（POST）：后台线程执行一次"抓取(raw)+全池校验(use)"，进程内锁防重入（gunicorn 多 worker 下不跨进程）
   - `/logs`：日志文件列表 / 尾部内容（name 白名单校验防路径穿越，lines 上限 1000）
-  - 登录验证：`.env` 设 `WEBUI_PASSWORD` 后启用（`WEBUI_USERNAME` 默认 admin；会话 Cookie，secret 由账号密码派生保证 gunicorn 多 worker 一致）。保护 `/fetchers`、`/logs`、`POST /refresh`、`/delete`；对外代理 API 不受影响
+  - 登录验证：`.env` 设 `WEBUI_PASSWORD` 后启用（`WEBUI_USERNAME` 默认 admin；会话 Cookie，secret 由账号密码派生保证 gunicorn 多 worker 一致）。启用后数据+管理接口均需授权：WebUI 登录会话，或 API Token（`?token=` / `Bearer` 头，`helper/apiToken.py`，存 `runtime_config.json`，WebUI「Token」页管理，可设有效期；token 不能管理 token）。运行时状态统一存 `runtime_config.json`（`helper/runtimeConfig.py` 读写：fetcher_exclude 黑名单 + api_tokens）
 - **命令行入口** (`proxyPool.py`)：基于 click 的命令行工具，包含 `schedule` 和 `server` 两个子命令。
 
 ### 扩展代理源
