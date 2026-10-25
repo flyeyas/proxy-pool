@@ -36,8 +36,8 @@ const filteredProxies = computed(() => {
 
 async function loadData() {
   const [countData, allData] = await Promise.all([api.getCount(), api.getAll()])
-  stats.value = countData
-  proxies.value = allData
+  stats.value = countData.data
+  proxies.value = (allData.data && allData.data.proxies) || []
 }
 
 const polling = usePolling(loadData, 5000)
@@ -51,10 +51,14 @@ function flash(text, isErr = false) {
 async function triggerRefresh() {
   refreshBusy.value = true
   try {
-    const r = await api.refresh()
-    flash(r.src === 'started' ? '已触发抓取 + 校验，后台执行中' : '已有任务在执行中，请稍候')
+    await api.refresh()
+    flash('已触发抓取 + 校验，后台执行中')
   } catch (e) {
-    flash('触发失败: ' + e.message, true)
+    if (e.status === 409) {
+      flash('已有任务在执行中，请稍候')
+    } else {
+      flash('触发失败: ' + e.message, true)
+    }
   } finally {
     refreshBusy.value = false
   }

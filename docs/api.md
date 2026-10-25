@@ -1,5 +1,19 @@
 # API 使用
 
+## 响应格式约定
+
+所有接口返回统一的 JSON 包裹格式，`code` 与 HTTP 状态码一致（保持真实语义，不做永远 200）：
+
+```json
+// 成功: 2xx, data 为资源数据(无数据时为 null)
+{"code": 200, "message": "ok", "data": {"proxy": "1.2.3.4:8080", "...": "..."}}
+
+// 失败: 4xx/5xx, data 恒为 null
+{"code": 404, "message": "no proxy available", "data": null}
+```
+
+常见 `code`：`200` 成功、`201` 已创建（生成 token）、`202` 已受理（手动触发刷新）、`400` 参数错误、`401` 未授权（需登录会话或 API Token）、`404` 资源不存在（如池空时 `/get`）、`409` 冲突（重复触发刷新）。
+
 ## 接口列表
 
 启动 ProxyPool 的 `server` 后会提供如下 HTTP 接口：
@@ -7,13 +21,14 @@
 | 接口 | 方法 | 说明 | 参数 |
 |------|------|------|------|
 | `/` | GET | 返回 API 列表 | 无 |
-| `/get` | GET | 随机返回一个代理 | 可选：`?type=https` 过滤 HTTPS 代理 |
-| `/pop` | GET | 返回并删除一个代理 | 可选：`?type=https` 过滤 HTTPS 代理 |
-| `/all` | GET | 返回所有代理 | 可选：`?type=https` 过滤 HTTPS 代理 |
+| `/get` | GET | 随机返回一个代理（池空 404） | 可选：`?type=https` 过滤 HTTPS 代理 |
+| `/pop` | GET | 返回并删除一个代理（池空 404） | 可选：`?type=https` 过滤 HTTPS 代理 |
+| `/all` | GET | 返回所有代理：`{"count": N, "proxies": [...]}` | 可选：`?type=https` 过滤 HTTPS 代理 |
 | `/count` | GET | 返回代理数量统计 | 无 |
-| `/delete` | GET | 删除指定代理 | `?proxy=host:port` |
+| `/delete` | DELETE | 删除指定代理（兼容 GET）；`200 {"deleted": true}` / 404 | `?proxy=host:port` |
 | `/fetchers` | GET | 返回全部代理源及启用状态 | 无 |
-| `/refresh` | POST | 手动触发一次抓取+校验（后台执行） | 无 |
+| `/fetchers/<类名>` | PATCH | 启停指定代理源，body `{"enabled": bool}` | 无 |
+| `/refresh` | POST | 手动触发一次抓取+校验（202 后台执行；重复触发 409） | 无 |
 | `/logs` | GET | 日志文件列表 / 指定日志尾部内容 | 可选：`?name=fetch&lines=200`（lines 上限 1000） |
 | `/webui/` | GET | WebUI 管理后台页面 | 无，详见 [WebUI 后台](webui.md) |
 

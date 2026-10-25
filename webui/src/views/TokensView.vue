@@ -28,7 +28,7 @@ async function load() {
   loading.value = true
   try {
     const r = await api.tokenList()
-    tokens.value = r.tokens || []
+    tokens.value = (r.data && r.data.tokens) || []
   } catch (e) {
     flash('加载失败: ' + e.message, true)
   } finally {
@@ -39,7 +39,7 @@ async function load() {
 async function create() {
   try {
     const r = await api.tokenCreate(name.value, expireDays.value)
-    flash(`已生成 token「${r.token.name}」，可在下方复制使用`)
+    flash(`已生成 token「${r.data.token.name}」，可在下方复制使用`)
     name.value = ''
     await load()
   } catch (e) {

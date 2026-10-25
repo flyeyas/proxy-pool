@@ -8,13 +8,26 @@ async function request(url, options = {}) {
     auth.loggedIn = false
   }
   if (!resp.ok) {
+    // 优先取后端统一错误体 {error, message}
+    let body = null
     let detail = ''
     try {
-      detail = (await resp.text()).slice(0, 200)
+      const text = await resp.text()
+      try {
+        body = JSON.parse(text)
+      } catch (e) {
+        detail = text.slice(0, 200)
+      }
     } catch (e) {
       /* ignore */
     }
-    throw new Error(`HTTP ${resp.status} ${detail}`.trim())
+    const err = new Error((body && body.message) || detail || `HTTP ${resp.status}`)
+    err.status = resp.status
+    err.body = body
+    throw err
+  }
+  if (resp.status === 204) {
+    return null
   }
   const text = await resp.text()
   try {
@@ -32,30 +45,28 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     }),
-  logout: () => request('/auth/logout/'),
+  logout: () =>
+    request('/auth/logout/', { method: 'POST', headers: { 'Content-Type': 'application/json' } }),
   tokenList: () => request('/auth/tokens/'),
   tokenCreate: (name, expireDays) =>
-    request('/auth/tokens/create/', {
+    request('/auth/tokens/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, expire_days: expireDays })
     }),
   tokenDelete: (token) =>
-    request('/auth/tokens/delete/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    }),
+    request(`/auth/tokens/${encodeURIComponent(token)}/`, { method: 'DELETE' }),
   getCount: () => request('/count/'),
   getAll: () => request('/all/'),
-  deleteProxy: (proxy) => request(`/delete/?proxy=${encodeURIComponent(proxy)}`),
+  deleteProxy: (proxy) =>
+    request(`/delete/?proxy=${encodeURIComponent(proxy)}`, { method: 'DELETE' }),
   refresh: () => request('/refresh/', { method: 'POST' }),
   fetchers: () => request('/fetchers/'),
-  fetcherToggle: (className, enable) =>
-    request('/fetchers/toggle/', {
-      method: 'POST',
+  fetcherToggle: (className, enabled) =>
+    request(`/fetchers/${encodeURIComponent(className)}/`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ class_name: className, enable })
+      body: JSON.stringify({ enabled })
     }),
   logList: () => request('/logs/'),
   logContent: (name, lines) =>

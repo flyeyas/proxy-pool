@@ -14,9 +14,11 @@ const lineOptions = [100, 200, 500, 1000]
 async function loadList() {
   try {
     const r = await api.logList()
-    files.value = r.logs || []
+    files.value = (r.data && r.data.logs) || []
     if (!current.value && files.value.length) {
-      current.value = files.value[0]
+      // 默认选中第一个非空日志(如 fetcher/checker), 避免落在几乎恒为空的 fetch 上
+      const firstNonEmpty = files.value.find((f) => f.size > 0)
+      current.value = (firstNonEmpty || files.value[0]).name
     }
   } catch (e) {
     error.value = e.message
@@ -28,7 +30,7 @@ async function loadContent() {
   error.value = ''
   try {
     const r = await api.logContent(current.value, lines.value)
-    content.value = r.lines || []
+    content.value = (r.data && r.data.lines) || []
   } catch (e) {
     content.value = []
     error.value = e.message
@@ -54,13 +56,16 @@ watch([current, lines], () => {
         <h3 class="card-title">日志文件</h3>
         <div class="log-files" v-if="files.length">
           <button
-            v-for="name in files"
-            :key="name"
+            v-for="item in files"
+            :key="item.name"
             class="log-file-btn mono"
-            :class="{ active: name === current }"
-            @click="current = name"
+            :class="{ active: item.name === current }"
+            @click="current = item.name"
           >
-            {{ name }}
+            <span>{{ item.name }}</span>
+            <span style="color: var(--text-secondary); font-size: 11px">
+              {{ item.size > 1024 ? (item.size / 1024).toFixed(1) + 'K' : item.size + 'B' }}
+            </span>
           </button>
         </div>
         <div v-else class="empty" style="padding: 16px 0">

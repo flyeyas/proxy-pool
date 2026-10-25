@@ -91,18 +91,32 @@ cd webui && npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.
 
 ## API 接口
 
-启动 `server` 后提供如下接口。**启用登录后**（`.env` 设置 `WEBUI_PASSWORD`），下表接口均需授权——WebUI 内自动使用登录会话；**外部程序直连需带 API Token**（请求加 `?token=xxx` 或 `Authorization: Bearer xxx` 头，Token 在 WebUI「Token」页生成，可设置有效期）：
+启动 `server` 后提供如下接口。**启用登录后**（`.env` 设置 `WEBUI_PASSWORD`），下表接口均需授权——WebUI 内自动使用登录会话；**外部程序直连需带 API Token**（请求加 `?token=xxx` 或 `Authorization: Bearer xxx` 头，Token 在 WebUI「Token」页生成，可设置有效期）。
+
+接口采用统一的响应包裹格式（HTTP 状态码与 `code` 一致，保持真实语义）：
+
+```json
+// 成功: 2xx
+{"code": 200, "message": "ok", "data": { ...资源数据... }}
+// 失败: 4xx/5xx, data 恒为 null
+{"code": 404, "message": "no proxy available", "data": null}
+```
+
+- `code`：与 HTTP 状态码相同的整数（200/201 创建 / 202 已受理 / 400 参数错误 / 401 未授权 / 404 不存在 / 409 冲突）
+- `data`：资源数据，无数据时为 `null`；集合形如 `{"count": N, "proxies": [...]}`
+- 客户端判定：`resp.ok` 或 `code < 400` 即成功
 
 | 接口 | 方法 | 说明 | 参数 |
 | ----| ---- | ---- | ----|
 | `/` | GET | API 介绍 | 无 |
-| `/get` | GET | 随机获取一个代理 | 可选 `?type=https` |
-| `/pop` | GET | 获取并删除一个代理 | 可选 `?type=https` |
-| `/all` | GET | 获取所有代理 | 可选 `?type=https` |
+| `/get` | GET | 随机获取一个代理（池空 404） | 可选 `?type=https` |
+| `/pop` | GET | 获取并删除一个代理（池空 404） | 可选 `?type=https` |
+| `/all` | GET | 获取所有代理，返回 `{"count": N, "proxies": [...]}` | 可选 `?type=https` |
 | `/count` | GET | 代理数量统计（含分布） | 无 |
-| `/delete` | GET | 删除代理 | `?proxy=host:port` |
+| `/delete` | DELETE | 删除代理（兼容 GET），返回 `{"deleted": true}` 或 404 | `?proxy=host:port` |
 | `/fetchers` | GET | 代理源列表及状态 | 无 |
-| `/refresh` | POST | 手动触发一次抓取 + 校验（后台执行） | 无 |
+| `/fetchers/<类名>` | PATCH | 启停代理源，body `{"enabled": bool}` | 无 |
+| `/refresh` | POST | 手动触发一次抓取 + 校验（202，后台执行） | 无 |
 | `/logs` | GET | 日志文件列表 / 尾部内容 | 可选 `?name=fetch&lines=200` |
 | `/webui/` | GET | WebUI 管理后台 | 无 |
 
@@ -116,11 +130,12 @@ BASE = "http://127.0.0.1:5010"
 
 
 def get_proxy():
-    return requests.get(BASE + "/get/", params={"token": TOKEN}).json()
+    resp = requests.get(BASE + "/get/", params={"token": TOKEN})
+    return resp.json() if resp.status_code == 200 else None
 
 
 def delete_proxy(proxy):
-    requests.get(BASE + "/delete/", params={"proxy": proxy, "token": TOKEN})
+    requests.delete(BASE + "/delete/", params={"proxy": proxy, "token": TOKEN})
 
 
 def get_html():
