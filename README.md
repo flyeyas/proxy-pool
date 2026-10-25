@@ -162,10 +162,11 @@ def get_html():
 # 构建镜像
 docker build -t flyeyas/proxy-pool .
 
-# 一键启动（compose 会同时拉起 proxy_redis 与应用，日志挂载到宿主机 ./log/）
-docker-compose up -d
+# 推荐: docker compose 部署(配置读 .env, 日志挂到宿主机 ./log/, 崩溃自动拉起)
+cp .env.example .env && vim .env   # DB_CONN 指向你的 Redis
+docker compose up -d --build
 
-# 或手动运行（日志挂载到宿主机目录，可直接查看）
+# 或手动运行(日志挂载到宿主机目录，可直接查看)
 docker run -d --env DB_CONN=redis://:password@ip:port/0 \
   --env WEBUI_PASSWORD=change-me \
   -p 5010:5010 -v /宿主机日志目录:/app/log \

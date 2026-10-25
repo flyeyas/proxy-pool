@@ -8,6 +8,10 @@ log/
 docs/
 webui/node_modules
 webui/dist
+# 敏感/运行时文件不得打进镜像(配置通过 env_file 或 -e 在运行时注入)
+.env
+.env.local
+runtime_config.json
 __pycache__
 *.pyc
 *.pyc.*

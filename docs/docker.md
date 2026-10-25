@@ -39,33 +39,33 @@ ls /var/log/proxy_pool/
 
 ## 使用 docker-compose
 
-项目根目录下的 `docker-compose.yml` 定义了 ProxyPool 和 Redis 两个服务，日志自动挂载到项目目录 `log/`：
+`docker-compose.yml` 只定义应用本身，**配置统一从项目根目录 `.env` 读取**（`env_file`，与本地运行共用一份配置），日志挂载到 `./log/`，并设置了 `restart: unless-stopped` 开机自启/崩溃拉起：
 
 ```yaml
-version: '2'
 services:
   proxy_pool:
     build: .
     container_name: proxy_pool
     ports:
       - "5010:5010"
-    links:
-      - proxy_redis
-    environment:
-      DB_CONN: "redis://@proxy_redis:6379/0"
-      # WEBUI_PASSWORD: "change-me"
+    env_file:
+      - .env
     volumes:
       - ./log:/app/log
-  proxy_redis:
-    image: "redis"
-    container_name: proxy_redis
+    restart: unless-stopped
 ```
 
-先启动 Redis 容器（compose 中已定义，`docker-compose up -d` 会一并拉起）：
+部署步骤（连接你自己的 Redis，无需在 compose 里定义数据库）：
 
 ```console
-docker-compose up -d
+cp .env.example .env
+#   编辑 .env: DB_CONN=redis://:密码@主机:端口/0, WEBUI_PASSWORD=...
+docker compose up -d --build
 ```
+
+!!! note
+    - `.env`/`.env.local`/`runtime_config.json` 已被 `.dockerignore` 排除，**不会打进镜像**；配置通过 `env_file` 在运行时注入
+    - 如需在服务器本地跑一个 Redis 而不是外部 Redis：`docker run -d --name proxy_redis redis` 后把 `.env` 的 `DB_CONN` 指向它（`redis://@宿主机IP:6379/0`）即可，compose 无需改动
 
 ## 容器环境注意事项
 
