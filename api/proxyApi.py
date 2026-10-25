@@ -44,7 +44,7 @@ class JsonResponse(Response):
         return super(JsonResponse, cls).force_type(response, environ)
 
 
-app.response_class = JsonResponse
+app.response_class = JsonResponse  # type: ignore # Flask 官方支持的响应类替换方式, 类型桩未覆盖
 app.register_blueprint(webui_bp)
 
 # WebUI 登录会话签名密钥: 优先环境变量; 未设置时由账号密码派生,
