@@ -52,6 +52,10 @@ class ConfigHandler(withMetaclass(Singleton)):
         return getattr(setting, 'PROXY_FETCHER_EXCLUDE', [])
 
     @LazyProperty
+    def fetcherAutoDisableFails(self):
+        return int(os.getenv("FETCHER_AUTO_DISABLE_FAILS", setting.FETCHER_AUTO_DISABLE_FAILS))
+
+    @LazyProperty
     def httpUrl(self):
         return os.getenv("HTTP_URL", setting.HTTP_URL)
 

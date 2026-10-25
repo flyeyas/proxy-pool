@@ -166,11 +166,41 @@ class TestFetcherToggle:
         return path
 
     def test_fetchers_returns_runtime_fields(self, client, runtime_config):
-        """/fetchers/ 包含类名与运行时/静态黑名单状态字段"""
+        """/fetchers/ 包含类名/黑名单状态/自动禁用与统计字段"""
         data = client.get("/fetchers/").get_json()
         assert len(data["data"]["fetchers"]) > 0
         for item in data["data"]["fetchers"]:
-            assert {"class_name", "excluded", "setting_excluded", "runtime_excluded"} <= set(item.keys())
+            assert {"class_name", "excluded", "setting_excluded", "runtime_excluded",
+                    "auto_disabled", "stats"} <= set(item.keys())
+
+    def test_auto_disabled_display_and_enable(self, client, runtime_config):
+        """自动禁用的源展示状态与统计, PATCH 启用后清除并重置"""
+        import json as jsonlib
+        runtime_config.write_text(jsonlib.dumps({
+            "fetcher_auto_disable": ["KuaidailiFetcher"],
+            "fetcher_stats": {
+                "KuaidailiFetcher": {
+                    "fails": 5, "last_error": "timeout",
+                    "disable_reason": "连续失败 5 次: timeout",
+                    "disabled_at": "2026-10-25 00:00:00"}
+            }
+        }), encoding="utf-8")
+
+        data = client.get("/fetchers/").get_json()["data"]
+        item = next(f for f in data["fetchers"] if f["class_name"] == "KuaidailiFetcher")
+        assert item["auto_disabled"] is True
+        assert item["excluded"] is True
+        assert item["stats"]["fails"] == 5
+
+        resp = client.patch("/fetchers/KuaidailiFetcher/", json={"enabled": True})
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["auto_disable"] == []
+
+        data = client.get("/fetchers/").get_json()["data"]
+        item = next(f for f in data["fetchers"] if f["class_name"] == "KuaidailiFetcher")
+        assert item["auto_disabled"] is False
+        assert item["excluded"] is False
+        assert item["stats"] == {}
 
     def test_toggle_disable_and_enable(self, client, runtime_config):
         """禁用 -> 状态为已排除; 启用 -> 恢复"""

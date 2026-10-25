@@ -25,7 +25,7 @@ http://127.0.0.1:5010/webui/
 ## 功能
 
 - **仪表盘**：代理总数 / HTTP / HTTPS / 来源数统计卡片；协议与来源分布条形图；代理列表（支持协议筛选、关键字搜索、单条删除）；5 秒自动刷新（可暂停）；「立即抓取并校验」按钮（后台线程执行一次完整抓取 + 全池复检）
-- **代理源**：列出 `fetcher/sources/` 下全部代理源，支持**后台启停开关**（写入运行时黑名单 `runtime_config.json`，与 `setting.py` 的 `PROXY_FETCHER_EXCLUDE` 取并集生效；每轮抓取前读取，热生效；被 `setting.py` 黑名单或源文件 `enabled=False` 禁用的源不可在后台开启）
+- **代理源**：列出 `fetcher/sources/` 下全部代理源，支持**后台启停开关**（写入运行时黑名单 `runtime_config.json`，与 `setting.py` 的 `PROXY_FETCHER_EXCLUDE` 取并集生效；每轮抓取前读取，热生效）；**连续失败自动禁用**（默认 5 次，`FETCHER_AUTO_DISABLE_FAILS` 可调）——被禁源有红色标注（失败原因/最近错误/禁用时间），可点击「启用」重置统计重新观察；列表还展示各源最近成功时间
 - **日志**：查看 `log/` 目录下各日志文件的尾部内容（fetch、checker、scheduler 等），支持行数选择与自动刷新
 
     !!! warning "Windows 限制"

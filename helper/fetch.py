@@ -20,7 +20,7 @@ from threading import Thread
 
 from helper.proxy import Proxy
 from helper.check import DoValidator
-from helper.fetcherConfig import getRuntimeExclude
+from helper.fetcherConfig import getEffectiveExclude, recordFetchResult
 from handler.logHandler import LogHandler
 from handler.configHandler import ConfigHandler
 from fetcher.baseFetcher import BaseFetcher
@@ -99,10 +99,14 @@ class _ThreadFetcher(Thread):
         self.fetcher_class = fetcher_class
         self.proxy_dict = proxy_dict
         self.log = LogHandler("fetcher")
+        self.conf = ConfigHandler()
 
     def run(self):
         fetcher_name = self.fetcher_class.name
+        class_name = self.fetcher_class.__name__
         self.log.info("ProxyFetch - {func}: start".format(func=fetcher_name))
+        proxy_count = 0
+        error = ''
         try:
             for proxy in self.fetcher_class().fetch():
                 self.log.info('ProxyFetch - %s: %s ok' % (fetcher_name, proxy.ljust(23)))
@@ -112,9 +116,16 @@ class _ThreadFetcher(Thread):
                 else:
                     self.proxy_dict[proxy] = Proxy(
                         proxy, source=fetcher_name)
+                proxy_count += 1
         except Exception as e:
             self.log.error("ProxyFetch - {func}: error".format(func=fetcher_name))
             self.log.error(str(e))
+            error = '%s: %s' % (type(e).__name__, e)
+        # 抓取结果上报: 异常或零产出视为失败, 连续失败达到阈值自动禁用
+        ok = proxy_count > 0
+        recordFetchResult(class_name, ok,
+                          error=error if error else ('' if ok else '抓取产出 0 条代理'),
+                          auto_disable_fails=self.conf.fetcherAutoDisableFails)
 
 
 class Fetcher(object):
@@ -133,8 +144,8 @@ class Fetcher(object):
         thread_list = list()
         self.log.info("ProxyFetch : start")
 
-        # 黑名单 = setting.py 静态配置 + WebUI 后台运行时开关(热生效, 每轮抓取前读取)
-        exclude_list = list(set(self.conf.fetcherExclude) | set(getRuntimeExclude()))
+        # 黑名单 = setting.py 静态配置 + 运行时手动/自动禁用(热生效, 每轮抓取前读取)
+        exclude_list = list(set(self.conf.fetcherExclude) | set(getEffectiveExclude()))
         fetcher_classes = _discover_fetchers(exclude_list)
         self.log.info("ProxyFetch : active fetchers [%s]" % ", ".join(c.name for c in fetcher_classes))
 

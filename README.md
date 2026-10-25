@@ -70,6 +70,7 @@ cd webui && npm install && npm run build
 | `VERIFY_TIMEOUT` | 代理验证超时（秒） | `10` |
 | `MAX_FAIL_COUNT` | 复检失败几次后剔除 | `0`（失败一次即剔除） |
 | `POOL_SIZE_MIN` | 池内代理低于该数量触发补抓 | `20` |
+| `FETCHER_AUTO_DISABLE_FAILS` | 代理源连续抓取失败(异常或0产出)达到该次数自动禁用，0 关闭 | `5` |
 | `WEBUI_USERNAME` / `WEBUI_PASSWORD` | WebUI 登录账号（密码留空则不启用登录） | `admin` / 空 |
 
 ## WebUI 管理后台

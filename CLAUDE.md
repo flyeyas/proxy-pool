@@ -69,7 +69,7 @@ tests/
   - 服务运行在 `HOST:PORT`（默认 `0.0.0.0:5010`），配置来自 `setting.py`。
 - **WebUI** (`api/webuiApi.py` + `webui/`)：Blueprint，为 Vue 3 + Vite 前端（`webui/` 目录，零组件库依赖）提供支持：
   - `/webui/`：托管 `webui/dist/` 构建产物（SPA history 路由 fallback；未构建返回 503）
-  - `/fetchers`：全部代理源及 enabled/黑名单状态（黑名单按类名 `__name__` 匹配）；`POST /fetchers/toggle` 后台启停代理源（运行时黑名单存 `runtime_config.json`，与 `setting.PROXY_FETCHER_EXCLUDE` 并集生效，见 `helper/fetcherConfig.py`）
+  - `/fetchers`：全部代理源及 enabled/黑名单状态（黑名单按类名 `__name__` 匹配）+ 抓取统计；`PATCH /fetchers/<类名>` 启停代理源（手动黑名单存 `runtime_config.json`）；**连续失败自动禁用**（`FETCHER_AUTO_DISABLE_FAILS`，默认 5，0 关闭；统计与自动禁用名单也存 `runtime_config.json`，见 `helper/fetcherConfig.py` 的 `recordFetchResult/enableFetcher`；启用会清名单并重置统计）
   - `/refresh`（POST）：后台线程执行一次"抓取(raw)+全池校验(use)"，flock 文件锁防重入（跨 gunicorn 多 worker 互斥，进程崩溃自动释放；Windows 降级为进程内标志）
   - `/logs`：日志文件列表 / 尾部内容（name 白名单校验防路径穿越，lines 上限 1000）
   - 登录验证：`.env` 设 `WEBUI_PASSWORD` 后启用（`WEBUI_USERNAME` 默认 admin；会话 Cookie，secret 由账号密码派生保证 gunicorn 多 worker 一致）。启用后数据+管理接口均需授权：WebUI 登录会话，或 API Token（`?token=` / `Bearer` 头，`helper/apiToken.py`，存 `runtime_config.json`，WebUI「Token」页管理，可设有效期；token 不能管理 token）。运行时状态统一存 `runtime_config.json`（`helper/runtimeConfig.py` 读写：fetcher_exclude 黑名单 + api_tokens）

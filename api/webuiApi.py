@@ -32,7 +32,8 @@ from handler.logHandler import listLogFiles, readRecentLines
 from handler.configHandler import ConfigHandler
 from fetcher.baseFetcher import BaseFetcher
 from helper.fetch import _get_sources_dir, _load_module
-from helper.fetcherConfig import getRuntimeExclude, toggleRuntimeExclude
+from helper.fetcherConfig import (getRuntimeExclude, toggleRuntimeExclude,
+                                  getAutoDisable, getFetcherStats, enableFetcher)
 from helper.apiToken import listTokens, generateToken, deleteToken, verifyApiToken
 from api.response import apiOk, apiError
 
@@ -204,10 +205,12 @@ def webui(filename='index.html'):
 
 @webui_bp.route('/fetchers/')
 def fetchers():
-    """列出全部代理源(含 disabled), 及其启用/黑名单状态"""
+    """列出全部代理源(含 disabled), 及其启用/黑名单状态与抓取统计"""
     # 黑名单匹配口径与 helper/fetch.py 一致: fetcher 类名(__name__)
     setting_exclude = ConfigHandler().fetcherExclude
     runtime_exclude = set(getRuntimeExclude())
+    auto_exclude = set(getAutoDisable())
+    stats = getFetcherStats()
     sources_dir = _get_sources_dir()
     result = []
     for filename in os.listdir(sources_dir):
@@ -229,9 +232,13 @@ def fetchers():
                     "class_name": class_name,
                     "url": getattr(attr, 'url', '') or '',
                     "enabled": bool(getattr(attr, 'enabled', True)),
-                    "excluded": class_name in setting_exclude or class_name in runtime_exclude,
+                    "excluded": class_name in setting_exclude
+                                or class_name in runtime_exclude
+                                or class_name in auto_exclude,
                     "setting_excluded": class_name in setting_exclude,
                     "runtime_excluded": class_name in runtime_exclude,
+                    "auto_disabled": class_name in auto_exclude,
+                    "stats": stats.get(class_name, {}),
                 })
     result.sort(key=lambda item: item["name"])
     return apiOk({"fetchers": result})
@@ -239,14 +246,22 @@ def fetchers():
 
 @webui_bp.route('/fetchers/<class_name>/', methods=['PATCH'])
 def fetcherToggle(class_name):
-    """后台开关代理源: body {"enabled": bool}, 写入运行时黑名单, 下轮抓取/手动刷新即生效"""
+    """
+    开关代理源: body {"enabled": bool}
+    - 禁用: 写入手动黑名单; 启用: 移出手动+自动禁用名单并重置抓取统计
+    """
     data = request.get_json(silent=True) or {}
     enable = bool(data.get('enabled'))
     class_name = (class_name or '').strip()
     if not class_name or not _LOG_NAME_PATTERN.match(class_name):
         return apiError(400, "invalid fetcher class name")
-    exclude = toggleRuntimeExclude(class_name, enable)
-    return apiOk({"fetcher": class_name, "excluded": not enable, "fetcher_exclude": exclude})
+    if enable:
+        manual, auto = enableFetcher(class_name)
+    else:
+        manual = toggleRuntimeExclude(class_name, False)
+        auto = getAutoDisable()
+    return apiOk({"fetcher": class_name, "excluded": not enable,
+                  "fetcher_exclude": manual, "auto_disable": auto})
 
 
 def _runFetchAndCheck(lock_handle=None):
