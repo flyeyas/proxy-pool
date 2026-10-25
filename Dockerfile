@@ -39,6 +39,9 @@ COPY . .
 # webui 前端构建产物
 COPY --from=webui-builder /webui/dist /app/webui/dist
 
+# 日志目录声明为卷: 运行时用 -v <宿主机路径>:/app/log 即可在宿主机直接查看日志
+VOLUME ["/app/log"]
+
 EXPOSE 5010
 
 ENTRYPOINT ["tini", "--", "bash", "proxy_pool.sh", "start", "--fg"]

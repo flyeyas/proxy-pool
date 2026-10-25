@@ -21,6 +21,12 @@ from handler.logHandler import (
 )
 
 
+@pytest.fixture(autouse=True)
+def tmp_log_path(tmp_path, monkeypatch):
+    """隔离日志目录: 防止测试创建的 file handler 把文件写进项目 log/"""
+    monkeypatch.setattr("handler.logHandler.LOG_PATH", str(tmp_path))
+
+
 class TestLogHandlerInit:
     """__init__ 测试"""
 
@@ -84,6 +90,16 @@ class TestLogHandlerFileLevel:
                          if isinstance(h, logging.handlers.TimedRotatingFileHandler)]
         assert len(file_handlers) > 0
         assert file_handlers[0].level == INFO
+
+    @patch("handler.logHandler.platform")
+    def test_file_handler_hourly_rotation(self, mock_platform):
+        """日志按小时切割, 保留168个(7天)"""
+        mock_platform.system.return_value = "Linux"
+        log = LogHandler("test_hourly", level=INFO, stream=False, file=True)
+        handler = [h for h in log.handlers
+                   if isinstance(h, logging.handlers.TimedRotatingFileHandler)][0]
+        assert handler.when == 'H'
+        assert handler.backupCount == 168
 
     @patch("handler.logHandler.platform")
     def test_file_handler_explicit_level(self, mock_platform):

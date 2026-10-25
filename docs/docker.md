@@ -2,19 +2,44 @@
 
 ## 使用 Docker 镜像
 
-拉取并运行 Docker 镜像：
+构建并运行自己的镜像：
 
 ```console
-docker pull jhao104/proxy_pool:latest
+docker build -t flyeyas/proxy-pool:latest .
 
-docker run --env DB_CONN=redis://:password@ip:port/0 -p 5010:5010 jhao104/proxy_pool:latest
+docker run -d --name proxy_pool \
+  --env DB_CONN=redis://:password@ip:port/0 \
+  --env WEBUI_PASSWORD=change-me \
+  -p 5010:5010 \
+  -v /宿主机日志路径/log:/app/log \
+  flyeyas/proxy-pool:latest
 ```
 
-`DB_CONN` 环境变量会覆盖 `setting.py` 中的数据库连接配置。
+常用环境变量：
+
+- `DB_CONN`：数据库连接（覆盖 `setting.py`，也支持 `.env` 文件）
+- `WEBUI_USERNAME` / `WEBUI_PASSWORD`：WebUI 登录账号
+- `FETCHER_AUTO_DISABLE_FAILS`：代理源连续失败自动禁用阈值
+
+## 在宿主机查看日志
+
+镜像将 `/app/log` 声明为卷（`VOLUME`）。运行时用 `-v` 把它挂到宿主机目录，即可直接查看/切割日志文件，无需进入容器：
+
+```console
+docker run ... -v /var/log/proxy_pool:/app/log ...
+
+# 宿主机上直接查看
+tail -f /var/log/proxy_pool/fetcher.log
+ls /var/log/proxy_pool/
+```
+
+日志按小时切割（保留 7 天）。不挂载时 Docker 会创建匿名卷，可通过 `docker inspect <容器> | grep -A3 log` 找到宿主机路径，但推荐显式挂载。
+
+`docker logs <容器>` 仍可查看标准输出日志（与文件内容一致）。
 
 ## 使用 docker-compose
 
-项目根目录下的 `docker-compose.yml` 定义了 ProxyPool 和 Redis 两个服务：
+项目根目录下的 `docker-compose.yml` 定义了 ProxyPool 和 Redis 两个服务，日志自动挂载到项目目录 `log/`：
 
 ```yaml
 version: '2'
@@ -28,12 +53,15 @@ services:
       - proxy_redis
     environment:
       DB_CONN: "redis://@proxy_redis:6379/0"
+      # WEBUI_PASSWORD: "change-me"
+    volumes:
+      - ./log:/app/log
   proxy_redis:
     image: "redis"
     container_name: proxy_redis
 ```
 
-启动：
+先启动 Redis 容器（compose 中已定义，`docker-compose up -d` 会一并拉起）：
 
 ```console
 docker-compose up -d
