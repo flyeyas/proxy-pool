@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
 
   proxy_redis:
-    image: redis:alpine
+    image: redis:8-alpine
     container_name: proxy_redis
     # 密码来自 .env 的 REDIS_PASSWORD(与 DB_CONN 中保持一致); AOF持久化 + 数据卷
     command: ["redis-server", "--appendonly", "yes",

@@ -3,7 +3,7 @@
 本文件为 Claude Code (claude.ai/code) 在本仓库中工作时提供指导。
 
 ## 技术栈
-Python (3.8–3.11)、Flask (API)、Redis/SSDB (存储)、APScheduler (调度)。依赖版本固定记录在 `requirements.txt` 中。
+Python (3.10–3.13)、Flask (API)、Redis/SSDB (存储)、APScheduler (调度)。依赖版本固定记录在 `requirements.txt` 中。
 
 ## 常用命令
 - 安装依赖：`pip install -r requirements.txt`
