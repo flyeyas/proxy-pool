@@ -1,5 +1,5 @@
 {
   "typeCheckingMode": "basic",
-  "pythonVersion": "3.8",
+  "pythonVersion": "3.10",
   "exclude": ["webui", "tests", ".git", "**/__pycache__", "log"]
 }
