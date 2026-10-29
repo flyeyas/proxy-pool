@@ -9,15 +9,17 @@
    Change Activity:
                    2020/6/22:
                    2026/10/25: 接入 .env 配置文件加载
+                   2026/10/29: 移除 six 兼容层, 改用标准库
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
 import os
+from importlib import reload
+
 import setting
 from util.singleton import Singleton
 from util.lazyProperty import LazyProperty
-from util.six import reload_six, withMetaclass
 from util.envHandler import loadAllEnvVars
 
 # 启动时加载环境配置文件, 优先级: 系统环境变量 > .env.local(本地) > .env(线上) > setting.py
@@ -25,7 +27,7 @@ from util.envHandler import loadAllEnvVars
 LOADED_ENV_FILES = loadAllEnvVars()
 
 
-class ConfigHandler(withMetaclass(Singleton)):
+class ConfigHandler(metaclass=Singleton):
 
     def __init__(self):
         pass
@@ -48,7 +50,7 @@ class ConfigHandler(withMetaclass(Singleton)):
 
     @property
     def fetcherExclude(self):
-        reload_six(setting)
+        reload(setting)
         return getattr(setting, 'PROXY_FETCHER_EXCLUDE', [])
 
     @LazyProperty

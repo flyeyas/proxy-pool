@@ -284,7 +284,7 @@ def fetcherToggle(class_name):
 def _runFetchAndCheck(lock_handle=None):
     """后台任务: 执行一次完整抓取入库 + 全池复检(与 scheduler 逻辑一致)"""
     try:
-        from util.six import Queue
+        from queue import Queue
         from helper.fetch import Fetcher
         from helper.check import Checker
         from handler.proxyHandler import ProxyHandler

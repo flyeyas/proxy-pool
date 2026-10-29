@@ -8,13 +8,13 @@
 -------------------------------------------------
    Change Activity:
                    2023/03/10: 支持带用户认证的代理格式 username:password@ip:port
+                   2026/10/29: 移除 six 兼容层
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
 import re
 from requests import head
-from util.six import withMetaclass
 from util.singleton import Singleton
 from handler.configHandler import ConfigHandler
 
@@ -28,7 +28,7 @@ HEADER = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:34.0) Gecko/2010
 IP_REGEX = re.compile(r"(.*:.*@)?\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,5}")
 
 
-class ProxyValidator(withMetaclass(Singleton)):
+class ProxyValidator(metaclass=Singleton):
     pre_validator = []
     http_validator = []
     https_validator = []

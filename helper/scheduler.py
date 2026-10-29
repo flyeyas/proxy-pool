@@ -9,6 +9,7 @@
    Change Activity:
                    2019/08/05: proxyScheduler
                    2021/02/23: runProxyCheck时,剩余代理少于POOL_SIZE_MIN时执行抓取
+                   2026/10/29: 移除 six 兼容层
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -16,7 +17,7 @@ __author__ = 'JHao'
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.executors.pool import ProcessPoolExecutor
 
-from util.six import Queue
+from queue import Queue
 from helper.fetch import Fetcher
 from helper.check import Checker
 from handler.logHandler import LogHandler
