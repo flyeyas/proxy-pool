@@ -13,6 +13,7 @@
                    2020/06/23: 新增pop接口
                    2022/07/21: 更新count接口
                    2026/10/24: 注册WebUI Blueprint
+                   2026/10/29: 移除 six 兼容层
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -23,7 +24,6 @@ import platform
 from werkzeug.wrappers import Response
 from flask import Flask, jsonify, request, redirect
 
-from util.six import iteritems
 from helper.proxy import Proxy
 from handler.proxyHandler import ProxyHandler
 from handler.configHandler import ConfigHandler
@@ -117,9 +117,9 @@ def runFlask():
                 super(StandaloneApplication, self).__init__()
 
             def load_config(self):
-                _config = dict([(key, value) for key, value in iteritems(self.options)
+                _config = dict([(key, value) for key, value in self.options.items()
                                 if key in self.cfg.settings and value is not None])
-                for key, value in iteritems(_config):
+                for key, value in _config.items():
                     self.cfg.set(key.lower(), value)
 
             def load(self):

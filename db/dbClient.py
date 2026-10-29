@@ -10,6 +10,7 @@
    Change Activity:
                    2016/12/02:   DB工厂类
                    2020/07/03:   取消raw_proxy储存
+                   2026/10/29:   移除 six 兼容层, 改用标准库
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -17,13 +18,13 @@ __author__ = 'JHao'
 import os
 import sys
 
-from util.six import urlparse, withMetaclass
+from urllib.parse import urlparse
 from util.singleton import Singleton
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 
-class DbClient(withMetaclass(Singleton)):
+class DbClient(metaclass=Singleton):
     """
     DbClient DB工厂类 提供get/put/update/pop/delete/exists/getAll/clean/getCount/changeTable方法
 

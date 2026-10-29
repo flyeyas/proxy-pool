@@ -10,11 +10,12 @@
                    2019/08/06: 执行代理校验
                    2021/05/25: 分别校验http和https
                    2022/08/16: 获取代理Region信息
+                   2026/10/29: 移除 six 兼容层
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
-from util.six import Empty
+from queue import Empty
 from threading import Thread
 from datetime import datetime
 from util.webRequest import WebRequest
