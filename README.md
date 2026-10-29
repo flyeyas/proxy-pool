@@ -29,7 +29,7 @@ Main enhancements over the original project:
 
 ## Requirements
 
-- Python 3.8 – 3.13 (dependencies are selected automatically per Python version)
+- Python 3.10 – 3.13
 - Redis or SSDB (storage)
 - Node.js 18+ (only for building the WebUI frontend; not needed for Docker deployment)
 

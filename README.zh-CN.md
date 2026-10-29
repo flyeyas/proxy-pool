@@ -28,7 +28,7 @@
 
 ## 环境要求
 
-- Python 3.8 – 3.13（依赖按 Python 版本自动选择）
+- Python 3.10 – 3.13
 - Redis 或 SSDB（存储）
 - Node.js 18+（仅构建 WebUI 前端时需要，Docker 部署无需本地安装）
 
