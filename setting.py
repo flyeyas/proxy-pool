@@ -26,7 +26,7 @@ BANNER = r"""
 """
 
 # 本仓库(flyeyas/proxy-pool)版本号; 基于 jhao104/proxy_pool v2.4.0 二次开发
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 # ############### server config ###############
 HOST = "0.0.0.0"
