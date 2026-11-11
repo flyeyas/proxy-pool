@@ -19,3 +19,4 @@ docs/specs/
 htmlcov/
 webui/node_modules/
 webui/dist/
+.webui-online.json
