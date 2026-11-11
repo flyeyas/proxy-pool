@@ -60,7 +60,8 @@ cmd_start() {
         # 前台模式（容器环境）
         log_info "Starting in foreground mode..."
 
-        trap 'log_info "Shutting down..."; kill $SERVER_PID $SCHEDULER_PID 2>/dev/null; wait; rm -f "$PID_FILE"; exit 0' EXIT INT TERM
+        # TERM/INT 清理前撤销 trap, 避免 exit 再次触发 EXIT 清理并返回失败
+        trap 'trap - EXIT INT TERM; log_info "Shutting down..."; kill "${SERVER_PID:-}" "${SCHEDULER_PID:-}" 2>/dev/null || true; wait; rm -f "$PID_FILE"; exit 0' EXIT INT TERM
 
         $PYTHON proxyPool.py server &
         SERVER_PID=$!
