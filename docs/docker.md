@@ -29,13 +29,21 @@ docker run -d --name proxy_pool \
 docker run ... -v /var/log/proxy_pool:/app/log ...
 
 # 宿主机上直接查看
-tail -f /var/log/proxy_pool/fetcher.log
+tail -F /var/log/proxy_pool/fetcher.log
 ls /var/log/proxy_pool/
 ```
 
-日志按小时切割（保留 7 天）。不挂载时 Docker 会创建匿名卷，可通过 `docker inspect <容器> | grep -A3 log` 找到宿主机路径，但推荐显式挂载。
+文件日志按本地时区的每小时整点切割（Docker 默认 `Asia/Shanghai`），按小时边界保留最近七天，不依赖归档数量。不挂载时 Docker 会创建匿名卷，可通过 `docker inspect <容器> | grep -A3 log` 找到宿主机路径，但推荐显式挂载。
 
-`docker logs <容器>` 仍可查看标准输出日志（与文件内容一致）。
+- 当前文件：`fetcher.log`、`checker.log`、`scheduler.log` 等，WebUI 默认读取这些文件。
+- 小时归档：`fetcher.log.2026111122` 表示 2026-11-11 22 时的日志。跨小时写入时自动归档；启动时与调度器每小时整点也会切割空闲日志并清理过期归档。
+- 保留规则：早于当前小时减去 `7 × 24` 小时的归档会删除，日志较少时同样执行；已有小时归档继续参与清理。
+- 并发写入：切割、写入与 WebUI 读取使用文件锁，支持 API worker 和调度器共享日志；归档重名时追加 `.1`、`.2`，保留历史内容。
+- `*.log.lock` 是小时标记和进程锁文件，不属于日志归档，运行时应保留。
+
+使用 `tail -F` 跟随当前日志路径，可在切割后继续查看新文件。
+
+`docker logs <容器>` 仍可查看标准输出日志，其保存策略由 Docker 日志驱动管理。
 
 ## 使用 docker-compose
 

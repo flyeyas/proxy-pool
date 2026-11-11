@@ -8,6 +8,7 @@
 -------------------------------------------------
      Change Activity:
                      2026/06/15:
+                     2026/11/11: 文件日志改用多进程安全的整点切割处理器
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -41,7 +42,7 @@ class TestLogHandlerInit:
         """Linux 下创建 file handler"""
         mock_platform.system.return_value = "Linux"
         log = LogHandler("test_linux_file", stream=False, file=True)
-        has_file = any(isinstance(h, logging.handlers.TimedRotatingFileHandler) for h in log.handlers)
+        has_file = any(isinstance(h, logging.FileHandler) for h in log.handlers)
         assert has_file
 
     @patch("handler.logHandler.platform")
@@ -49,7 +50,7 @@ class TestLogHandlerInit:
         """Windows 下不创建 file handler"""
         mock_platform.system.return_value = "Windows"
         log = LogHandler("test_windows_no_file", stream=False, file=True)
-        has_file = any(isinstance(h, logging.handlers.TimedRotatingFileHandler) for h in log.handlers)
+        has_file = any(isinstance(h, logging.FileHandler) for h in log.handlers)
         assert not has_file
 
     def test_no_stream_handler_when_disabled(self):
@@ -65,7 +66,7 @@ class TestLogHandlerStreamLevel:
         """未指定 level 时使用 self.level"""
         log = LogHandler("test_stream_level", level=ERROR, stream=True, file=False)
         stream_handlers = [h for h in log.handlers if isinstance(h, logging.StreamHandler)
-                           and not isinstance(h, logging.handlers.TimedRotatingFileHandler)]
+                           and not isinstance(h, logging.FileHandler)]
         assert len(stream_handlers) > 0
         assert stream_handlers[0].level == ERROR
 
@@ -87,19 +88,17 @@ class TestLogHandlerFileLevel:
         mock_platform.system.return_value = "Linux"
         log = LogHandler("test_file_level", level=INFO, stream=False, file=True)
         file_handlers = [h for h in log.handlers
-                         if isinstance(h, logging.handlers.TimedRotatingFileHandler)]
+                         if isinstance(h, logging.FileHandler)]
         assert len(file_handlers) > 0
         assert file_handlers[0].level == INFO
 
     @patch("handler.logHandler.platform")
-    def test_file_handler_hourly_rotation(self, mock_platform):
-        """日志按小时切割, 保留168个(7天)"""
+    def test_file_handler_writes_current_log(self, mock_platform, tmp_path):
+        """文件日志保留稳定的当前日志路径"""
         mock_platform.system.return_value = "Linux"
         log = LogHandler("test_hourly", level=INFO, stream=False, file=True)
-        handler = [h for h in log.handlers
-                   if isinstance(h, logging.handlers.TimedRotatingFileHandler)][0]
-        assert handler.when == 'H'
-        assert handler.backupCount == 168
+        log.info("current record")
+        assert "current record" in (tmp_path / "test_hourly.log").read_text()
 
     @patch("handler.logHandler.platform")
     def test_file_handler_explicit_level(self, mock_platform):

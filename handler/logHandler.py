@@ -12,6 +12,7 @@
                    2020/07/13: Windows下TimedRotatingFileHandler线程不安全, 不再使用
                    2026/10/24: 新增listLogFiles/readRecentLines 供WebUI日志查看
                    2026/10/25: 日志改为按小时切割, 保留168个(7天)
+                   2026/11/11: 整点切割与七天时间清理, 支持多进程共享日志
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -21,8 +22,12 @@ import re
 import logging
 import platform
 import collections
+from contextlib import nullcontext
 
-from logging.handlers import TimedRotatingFileHandler
+from handler.hourlyLogHandler import (
+    HourlyRotatingFileHandler, cleanupExpiredLogs as _cleanupExpiredLogs,
+    _file_lock as _log_file_lock
+)
 
 # 日志级别
 CRITICAL = 50
@@ -67,11 +72,8 @@ class LogHandler(logging.Logger):
         :return:
         """
         file_name = os.path.join(LOG_PATH, '{name}.log'.format(name=self.name))
-        # 按小时切割日志, 一小时一个文件, 保留168个(7天)
-        # 切割后的备份文件命名为 name.log.YYYYMMDDHH(不带.log结尾, 避免混入WebUI日志列表)
-        file_handler = TimedRotatingFileHandler(filename=file_name, when='H', interval=1, backupCount=168)
-        file_handler.suffix = '%Y%m%d%H'
-        file_handler.extMatch = re.compile(r'^\d{10}$')
+        # 当前日志 name.log; 小时归档 name.log.YYYYMMDDHH, 按时间保留七天。
+        file_handler = HourlyRotatingFileHandler(file_name)
         if not level:
             file_handler.setLevel(self.level)
         else:
@@ -98,6 +100,13 @@ class LogHandler(logging.Logger):
         self.addHandler(stream_handler)
 
 
+def cleanupExpiredLogs():
+    """供调度器清理空闲日志及过期归档, Windows 不启用文件日志。"""
+    if platform.system() == "Windows":
+        return []
+    return _cleanupExpiredLogs(LOG_PATH)
+
+
 def listLogFiles():
     """
     列出 log 目录下所有日志文件名(不含扩展名), 供 WebUI 展示
@@ -119,12 +128,17 @@ def readRecentLines(name, lines=200):
     if not re.match(r'^[A-Za-z0-9_]+$', name or ''):
         return False, []
     file_path = os.path.join(LOG_PATH, name + '.log')
-    if not os.path.isfile(file_path):
-        return False, []
     result = collections.deque(maxlen=max(1, lines))
-    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
-        for line in f:
-            result.append(line.rstrip('\n'))
+    try:
+        lock = nullcontext() if platform.system() == "Windows" else _log_file_lock(file_path)
+        with lock:
+            if not os.path.isfile(file_path):
+                return False, []
+            with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                for line in f:
+                    result.append(line.rstrip('\n'))
+    except FileNotFoundError:
+        return False, []
     return True, list(result)
 
 

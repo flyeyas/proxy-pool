@@ -10,6 +10,7 @@
                    2019/08/05: proxyScheduler
                    2021/02/23: runProxyCheck时,剩余代理少于POOL_SIZE_MIN时执行抓取
                    2026/10/29: 移除 six 兼容层
+                   2026/11/11: 启动与每小时整点清理七天以前的日志
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -20,7 +21,7 @@ from apscheduler.executors.pool import ProcessPoolExecutor
 from queue import Queue
 from helper.fetch import Fetcher
 from helper.check import Checker
-from handler.logHandler import LogHandler
+from handler.logHandler import LogHandler, cleanupExpiredLogs
 from handler.proxyHandler import ProxyHandler
 from handler.configHandler import ConfigHandler
 
@@ -46,6 +47,7 @@ def __runProxyCheck():
 
 
 def runScheduler():
+    cleanupExpiredLogs()
     __runProxyFetch()
 
     timezone = ConfigHandler().timezone
@@ -54,6 +56,8 @@ def runScheduler():
 
     scheduler.add_job(__runProxyFetch, 'interval', minutes=5, id="proxy_fetch", name="proxy采集")
     scheduler.add_job(__runProxyCheck, 'interval', minutes=2, id="proxy_check", name="proxy检查")
+    scheduler.add_job(cleanupExpiredLogs, 'cron', minute=0, id="log_cleanup",
+                      name="过期日志清理", max_instances=1, coalesce=True)
     executors = {
         'default': {'type': 'threadpool', 'max_workers': 20},
         'processpool': ProcessPoolExecutor(max_workers=5)
@@ -63,7 +67,8 @@ def runScheduler():
         'max_instances': 10
     }
 
-    scheduler.configure(executors=executors, job_defaults=job_defaults, timezone=timezone)
+    scheduler.configure(executors=executors, job_defaults=job_defaults,
+                        logger=scheduler_log, timezone=timezone)
 
     scheduler.start()
 

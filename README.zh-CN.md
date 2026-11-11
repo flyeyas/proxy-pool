@@ -178,7 +178,7 @@ docker run -d --env DB_CONN=redis://:password@ip:port/0 \
   flyeyas/proxy-pool
 ```
 
-容器把 `/app/log` 声明为卷，挂载后在宿主机直接 `tail -f` 日志文件（按小时切割，保留 7 天），详见 [docs/docker.md](docs/docker.md)。
+容器把 `/app/log` 声明为卷，挂载后在宿主机使用 `tail -F` 查看当前日志。文件日志按整点切割、按时间保留最近七天，启动时和每小时清理过期归档，支持多进程共享写入，详见 [docs/docker.md](docs/docker.md)。
 
 ## 扩展代理源
 

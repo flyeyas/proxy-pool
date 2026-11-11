@@ -8,25 +8,24 @@
 -------------------------------------------------
      Change Activity:
                      2026/06/15:
+                     2026/11/11: 验证启动清理与每小时整点日志清理任务
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
-import sys
+import logging
 import pytest
 from unittest.mock import patch, MagicMock
-
-
-# apscheduler 依赖 pkg_resources，在 tox/uv 环境中可能缺失
-# 在 import 前 mock 掉，避免 collection 阶段报错
-_apscheduler_mock = MagicMock()
-sys.modules.setdefault("apscheduler", _apscheduler_mock)
-sys.modules.setdefault("apscheduler.schedulers", _apscheduler_mock.schedulers)
-sys.modules.setdefault("apscheduler.schedulers.blocking", _apscheduler_mock.schedulers.blocking)
-sys.modules.setdefault("apscheduler.executors", _apscheduler_mock.executors)
-sys.modules.setdefault("apscheduler.executors.pool", _apscheduler_mock.executors.pool)
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 import helper.scheduler as scheduler_mod
+
+
+@pytest.fixture(autouse=True)
+def mock_log_cleanup(monkeypatch):
+    cleanup = MagicMock()
+    monkeypatch.setattr(scheduler_mod, "cleanupExpiredLogs", cleanup)
+    return cleanup
 
 
 def _get_attr(name):
@@ -88,12 +87,32 @@ class TestRunProxyCheck:
 
 class TestRunScheduler:
 
+    def test_keeps_logger_when_configuring_scheduler(self, monkeypatch):
+        observed = []
+        logger = logging.Logger("scheduler_test")
+
+        class RecordingScheduler(BlockingScheduler):
+            def start(self):
+                observed.append(self)
+
+        monkeypatch.setattr(scheduler_mod, "BlockingScheduler", RecordingScheduler)
+        monkeypatch.setattr(scheduler_mod, "LogHandler", lambda name: logger)
+        monkeypatch.setattr(scheduler_mod, "ConfigHandler",
+                            lambda: MagicMock(timezone="Asia/Shanghai"))
+        monkeypatch.setattr(scheduler_mod, "__runProxyFetch", lambda: None)
+        scheduler_mod.runScheduler()
+        scheduler = observed[0]
+        assert scheduler._logger is logger
+        assert {job.id for job in scheduler.get_jobs()} == {
+            "proxy_fetch", "proxy_check", "log_cleanup"
+        }
+
     @patch("helper.scheduler.BlockingScheduler")
     @patch("helper.scheduler.__runProxyFetch")
     @patch("helper.scheduler.ConfigHandler")
     @patch("helper.scheduler.LogHandler")
-    def test_adds_two_jobs(self, mock_log, mock_conf_cls, mock_fetch, mock_sched_cls):
-        """runScheduler 添加两个定时任务"""
+    def test_adds_three_jobs(self, mock_log, mock_conf_cls, mock_fetch, mock_sched_cls):
+        """runScheduler 添加采集, 检查与日志清理任务"""
         mock_conf = MagicMock()
         mock_conf.timezone = "Asia/Shanghai"
         mock_conf_cls.return_value = mock_conf
@@ -102,7 +121,23 @@ class TestRunScheduler:
 
         scheduler_mod.runScheduler()
 
-        assert mock_sched.add_job.call_count == 2
+        assert mock_sched.add_job.call_count == 3
+
+    @patch("helper.scheduler.BlockingScheduler")
+    @patch("helper.scheduler.__runProxyFetch")
+    @patch("helper.scheduler.ConfigHandler")
+    @patch("helper.scheduler.LogHandler")
+    def test_log_cleanup_at_startup_and_top_of_hour(self, mock_log, mock_conf_cls,
+                                                   mock_fetch, mock_sched_cls,
+                                                   mock_log_cleanup):
+        mock_conf_cls.return_value.timezone = "Asia/Shanghai"
+        scheduler_mod.runScheduler()
+        mock_log_cleanup.assert_called_once_with()
+        job = mock_sched_cls.return_value.add_job.call_args_list[2]
+        assert job.args == (mock_log_cleanup, "cron")
+        assert job.kwargs["minute"] == 0
+        assert job.kwargs["max_instances"] == 1
+        assert job.kwargs["coalesce"] is True
 
     @patch("helper.scheduler.BlockingScheduler")
     @patch("helper.scheduler.__runProxyFetch")

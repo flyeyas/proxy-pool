@@ -180,7 +180,7 @@ docker run -d --env DB_CONN=redis://:password@ip:port/0 \
   flyeyas/proxy-pool
 ```
 
-`/app/log` is declared as a volume — mount it and `tail -f` the log files directly on the host (rotated hourly, 7 days retained). See [docs/docker.md](docs/docker.md) (Chinese) for details.
+`/app/log` is declared as a volume — mount it and use `tail -F` to follow the current log files. File logs rotate at clock-hour boundaries, retain the latest seven days by age, and support shared writes from multiple processes. Expired archives are cleaned at startup and every hour. See [docs/docker.md](docs/docker.md) (Chinese) for details.
 
 ## Extending Proxy Sources
 
