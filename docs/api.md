@@ -21,10 +21,10 @@
 | 接口 | 方法 | 说明 | 参数 |
 |------|------|------|------|
 | `/` | GET | 302 跳转到 `/webui/`（接口说明见 WebUI「API 文档」页） | 无 |
-| `/get` | GET | 随机返回一个代理（池空 404） | 可选：`?type=https` 过滤 HTTPS 代理 |
-| `/pop` | GET | 返回并删除一个代理（池空 404） | 可选：`?type=https` 过滤 HTTPS 代理 |
-| `/all` | GET | 返回所有代理：`{"count": N, "proxies": [...]}` | 可选：`?type=https` 过滤 HTTPS 代理 |
-| `/count` | GET | 返回代理数量统计 | 无 |
+| `/get` | GET | 随机返回一个代理（池空 404） | 可选：`?type=https` 过滤 HTTPS 代理；`?region=US` 按地区筛选（逗号分隔多地区，如 `?region=US,HK`，大小写不敏感） |
+| `/pop` | GET | 返回并删除一个代理（池空 404） | 同 `/get` |
+| `/all` | GET | 返回所有代理：`{"count": N, "proxies": [...]}` | 同 `/get` |
+| `/count` | GET | 返回代理数量统计（含协议/来源/地区分布） | 无 |
 | `/delete` | DELETE | 删除指定代理（兼容 GET）；`200 {"deleted": true}` / 404 | `?proxy=host:port` |
 | `/fetchers` | GET | 返回全部代理源及启用状态 | 无 |
 | `/fetchers/<类名>` | PATCH | 启停指定代理源，body `{"enabled": bool}` | 无 |
@@ -80,12 +80,31 @@ def get_html():
 proxy = requests.get("http://127.0.0.1:5010/get/?type=https").json()
 ```
 
+### 按地区筛选代理
+
+代理入库时会通过 geoip 接口解析地区（`PROXY_REGION=True` 时），可用 `region` 参数筛选，
+支持逗号分隔多地区，大小写不敏感：
+
+```python
+# 随机获取一个美国代理
+proxy = requests.get("http://127.0.0.1:5010/get/?region=US").json()
+
+# 香港/日本的多地区 HTTPS 代理（与 type 组合使用）
+proxy = requests.get("http://127.0.0.1:5010/get/?type=https&region=HK,JP").json()
+
+# 查看池内地区分布, 确认可筛选的地区码
+stats = requests.get("http://127.0.0.1:5010/count/").json()
+# 示例: data.region = {"US": 12, "HK": 5, "unknown": 2}
+```
+
+`/pop` 与 `/all` 同样支持 `region` 参数。
+
 ### 获取代理统计
 
 ```python
-# 返回代理数量、类型分布、来源分布
+# 返回代理数量、类型分布、来源分布、地区分布
 stats = requests.get("http://127.0.0.1:5010/count/").json()
-# 示例返回: {"http_type": {"http": 10, "https": 5}, "source": {"freeProxy01": 8, "freeProxy02": 7}, "count": 15}
+# 示例返回: {"http_type": {"http": 10, "https": 5}, "source": {"freeProxy01": 8, "freeProxy02": 7}, "region": {"US": 9, "unknown": 6}, "count": 15}
 ```
 
 ## 直接读取数据库

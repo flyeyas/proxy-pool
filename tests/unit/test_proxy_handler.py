@@ -48,7 +48,7 @@ class TestProxyHandlerGet:
         assert result is not None
         assert result.proxy == "1.2.3.4:8080"
         assert result.https is False
-        handler._mock_db.get.assert_called_once_with(False)
+        handler._mock_db.get.assert_called_once_with(False, None)
 
     def test_get_returns_none_when_empty(self):
         """DbClient 返回 None -> None"""
@@ -69,7 +69,7 @@ class TestProxyHandlerGet:
 
         assert result is not None
         assert result.https is True
-        handler._mock_db.get.assert_called_once_with(True)
+        handler._mock_db.get.assert_called_once_with(True, None)
 
 
 class TestProxyHandlerPop:
@@ -85,7 +85,7 @@ class TestProxyHandlerPop:
 
         assert result is not None
         assert result.proxy == "1.2.3.4:8080"
-        handler._mock_db.pop.assert_called_once_with(False)
+        handler._mock_db.pop.assert_called_once_with(False, None)
 
     def test_pop_returns_none_when_empty(self):
         """pop 无数据时返回 None"""
@@ -138,7 +138,7 @@ class TestProxyHandlerGetAll:
         assert len(result) == 2
         assert result[0].proxy == "1.2.3.4:8080"
         assert result[1].proxy == "5.6.7.8:443"
-        handler._mock_db.getAll.assert_called_once_with(False)
+        handler._mock_db.getAll.assert_called_once_with(False, None)
 
     def test_getAll_empty_returns_empty_list(self):
         """getAll 无数据返回空列表"""

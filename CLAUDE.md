@@ -61,10 +61,10 @@ tests/
 - **调度器** (`helper/scheduler.py`)：基于 APScheduler 的定时任务，驱动爬取器运行并触发验证。时区通过 `setting.py` 中的 `TIMEZONE` 配置。
 - **验证器** (`helper/validator.py`)：使用 `HTTP_URL` (http://httpbin.org) 和 `HTTPS_URL` (https://www.qq.com) 测试代理，超时时间由 `VERIFY_TIMEOUT` 指定（默认 10 秒）。超过 `MAX_FAIL_COUNT` 的代理会被移除。当代理池数量低于 `POOL_SIZE_MIN`（默认 20）时触发重新爬取。
 - **API** (`api/proxyApi.py`)：Flask 接口，包含以下端点：
-  - `/get`：随机获取一个代理（`?type=https` 可筛选 HTTPS 代理）
-  - `/pop`：获取并删除一个代理
-  - `/all`：列出所有代理
-  - `/count`：代理数量统计
+  - `/get`：随机获取一个代理（`?type=https` 可筛选 HTTPS 代理，`?region=US` 可按地区筛选，逗号分隔多地区，大小写不敏感）
+  - `/pop`：获取并删除一个代理（参数同 `/get`）
+  - `/all`：列出所有代理（参数同 `/get`）
+  - `/count`：代理数量统计（含协议/来源/地区分布）
   - `/delete`：通过 `?proxy=host:port` 删除指定代理
   - 服务运行在 `HOST:PORT`（默认 `0.0.0.0:5010`），配置来自 `setting.py`。
 - **WebUI** (`api/webuiApi.py` + `webui/`)：Blueprint，为 Vue 3 + Vite 前端（`webui/` 目录，零组件库依赖）提供支持：

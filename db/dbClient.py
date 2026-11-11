@@ -11,12 +11,15 @@
                    2016/12/02:   DB工厂类
                    2020/07/03:   取消raw_proxy储存
                    2026/10/29:   移除 six 兼容层, 改用标准库
+                   2026/11/11:   get/pop/getAll 支持 region 地区筛选(工厂层实现, Redis/SSDB通用)
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
 import os
 import sys
+import json
+from random import choice
 
 from urllib.parse import urlparse
 from util.singleton import Singleton
@@ -87,8 +90,40 @@ class DbClient(metaclass=Singleton):
                                                                                      password=self.db_pwd,
                                                                                      db=self.db_name)
 
-    def get(self, https, **kwargs):
-        return self.client.get(https, **kwargs)
+    @staticmethod
+    def _matchRegion(proxy_json, regions):
+        """
+        判断代理的 region 是否命中筛选集合(大小写不敏感)
+        :param proxy_json: 代理属性 json 字符串
+        :param regions: 大写地区码集合, 如 {"US", "HK"}
+        """
+        region = (json.loads(proxy_json).get("region") or "").upper()
+        return region in regions
+
+    @classmethod
+    def _parseRegions(cls, region):
+        """
+        解析 region 筛选参数: 逗号分隔多地区, 大小写不敏感
+        :param region: "US" / "us,hk"
+        :return: 大写地区码集合; 无有效值返回 None
+        """
+        if not region:
+            return None
+        regions = {_.strip().upper() for _ in region.split(",") if _.strip()}
+        return regions or None
+
+    def get(self, https, region=None):
+        """
+        返回一个代理; 指定 region 时仅在其命中的代理中随机
+        :param https: 是否仅 HTTPS 代理
+        :param region: 地区筛选, 逗号分隔(如 "US" / "us,hk"), 大小写不敏感
+        """
+        regions = self._parseRegions(region)
+        if not regions:
+            return self.client.get(https)
+        proxies = [item for item in self.client.getAll(https)
+                   if self._matchRegion(item, regions)]
+        return choice(proxies) if proxies else None
 
     def put(self, key, **kwargs):
         return self.client.put(key, **kwargs)
@@ -102,11 +137,29 @@ class DbClient(metaclass=Singleton):
     def exists(self, key, **kwargs):
         return self.client.exists(key, **kwargs)
 
-    def pop(self, https, **kwargs):
-        return self.client.pop(https, **kwargs)
+    def pop(self, https, region=None):
+        """
+        返回并删除一个代理; 指定 region 时仅在其命中的代理中随机
+        :param region: 地区筛选, 逗号分隔, 大小写不敏感
+        """
+        regions = self._parseRegions(region)
+        if not regions:
+            return self.client.pop(https)
+        proxy = self.get(https, region)
+        if proxy:
+            self.client.delete(json.loads(proxy).get("proxy", ""))
+        return proxy
 
-    def getAll(self, https):
-        return self.client.getAll(https)
+    def getAll(self, https, region=None):
+        """
+        返回所有代理; 指定 region 时仅返回命中的代理
+        :param region: 地区筛选, 逗号分隔, 大小写不敏感
+        """
+        items = self.client.getAll(https)
+        regions = self._parseRegions(region)
+        if regions:
+            items = [item for item in items if self._matchRegion(item, regions)]
+        return items
 
     def clear(self):
         return self.client.clear()

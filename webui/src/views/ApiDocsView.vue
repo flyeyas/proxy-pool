@@ -1,10 +1,10 @@
 <script setup>
 // 接口说明文档(静态内容, 与后端路由保持同步)
 const endpoints = [
-  { method: 'GET', path: '/get/', desc: '随机获取一个代理（池空返回 404）', params: '?type=https 筛选 HTTPS' },
-  { method: 'GET', path: '/pop/', desc: '获取并删除一个代理（池空返回 404）', params: '?type=https 筛选 HTTPS' },
-  { method: 'GET', path: '/all/', desc: '获取所有代理，data 为 {"count": N, "proxies": [...]}', params: '?type=https 筛选 HTTPS' },
-  { method: 'GET', path: '/count/', desc: '代理数量统计（含协议/来源分布）', params: '' },
+  { method: 'GET', path: '/get/', desc: '随机获取一个代理（池空返回 404）', params: '?type=https 筛选 HTTPS；?region=US 按地区筛选（逗号分隔如 US,HK，大小写不敏感）' },
+  { method: 'GET', path: '/pop/', desc: '获取并删除一个代理（池空返回 404）', params: '同 /get/' },
+  { method: 'GET', path: '/all/', desc: '获取所有代理，data 为 {"count": N, "proxies": [...]}', params: '同 /get/' },
+  { method: 'GET', path: '/count/', desc: '代理数量统计（含协议/来源/地区分布）', params: '' },
   { method: 'DELETE', path: '/delete/', desc: '删除代理，成功 {"deleted": true}，不存在 404', params: '?proxy=host:port' },
   { method: 'GET', path: '/fetchers/', desc: '代理源列表及状态、抓取统计', params: '' },
   { method: 'PATCH', path: '/fetchers/<类名>/', desc: '启停代理源', params: 'body {"enabled": bool}' },
@@ -29,6 +29,9 @@ const methodClass = {
 
 const curlExample = `# 带 Token 获取一个代理
 curl "http://127.0.0.1:5010/get/?token=pp_xxxxxxxx"
+
+# 按地区筛选(支持多地区, 大小写不敏感)
+curl "http://127.0.0.1:5010/get/?region=US,HK&token=pp_xxxxxxxx"
 
 # Bearer 请求头方式
 curl -H "Authorization: Bearer pp_xxxxxxxx" http://127.0.0.1:5010/count/`
