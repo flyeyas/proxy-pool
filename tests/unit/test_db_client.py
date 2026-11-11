@@ -8,9 +8,12 @@
 -------------------------------------------------
    Change Activity:
                    2026/05/28:
+                   2026/11/11: region 地区筛选测试
 -------------------------------------------------
 """
 __author__ = 'JHao'
+
+import json
 
 import pytest
 from unittest.mock import MagicMock, patch
@@ -160,3 +163,87 @@ class TestDbClientDelegation:
         result = db.test()
         db.client.test.assert_called_once()
         assert result is True
+
+
+class TestDbClientRegionFilter:
+    """工厂层 region 地区筛选测试"""
+
+    ITEMS = [
+        '{"proxy": "1.1.1.1:80", "region": "US"}',
+        '{"proxy": "2.2.2.2:80", "region": "CN"}',
+        '{"proxy": "3.3.3.3:80", "region": "HK"}',
+        '{"proxy": "4.4.4.4:80", "region": null}',
+        '{"proxy": "5.5.5.5:80"}',
+    ]
+
+    def _make_client(self):
+        db = DbClient.__new__(DbClient)
+        db.client = MagicMock()
+        db.client.getAll.return_value = list(self.ITEMS)
+        return db
+
+    def test_get_all_region_single(self):
+        """单地区筛选"""
+        db = self._make_client()
+        result = db.getAll(False, "US")
+        assert result == ['{"proxy": "1.1.1.1:80", "region": "US"}']
+
+    def test_get_all_region_multi_and_case_insensitive(self):
+        """逗号分隔多地区 + 大小写不敏感"""
+        db = self._make_client()
+        result = db.getAll(False, "us,hk")
+        assert len(result) == 2
+        assert '{"proxy": "1.1.1.1:80", "region": "US"}' in result
+        assert '{"proxy": "3.3.3.3:80", "region": "HK"}' in result
+
+    def test_get_all_region_no_match(self):
+        db = self._make_client()
+        assert db.getAll(False, "JP") == []
+
+    def test_get_all_region_none_keeps_all(self):
+        """不传 region 时行为与原来一致, 且直接委托 client.getAll"""
+        db = self._make_client()
+        result = db.getAll(False)
+        assert result == self.ITEMS
+        db.client.getAll.assert_called_once_with(False)
+
+    def test_get_all_region_empty_string_keeps_all(self):
+        """空字符串 / 纯逗号视为不筛选"""
+        db = self._make_client()
+        assert db.getAll(False, "") == self.ITEMS
+        assert db.getAll(False, " , ") == self.ITEMS
+
+    def test_get_region_picks_from_matches_only(self):
+        """get 带地区时仅从命中的代理中随机"""
+        db = self._make_client()
+        result = json.loads(db.get(False, "CN"))
+        assert result["proxy"] == "2.2.2.2:80"
+        # 未命中地区返回 None
+        assert db.get(False, "JP") is None
+
+    def test_get_region_none_delegates(self):
+        """不传 region 时委托 client.get(原快速路径)"""
+        db = self._make_client()
+        db.client.get.return_value = '{"proxy": "9.9.9.9:80"}'
+        assert db.get(False) == '{"proxy": "9.9.9.9:80"}'
+        db.client.get.assert_called_once_with(False)
+        db.client.getAll.assert_not_called()
+
+    def test_pop_region_deletes_matched(self):
+        """pop 带地区时删除命中代理并返回"""
+        db = self._make_client()
+        result = json.loads(db.pop(False, "HK"))
+        assert result["proxy"] == "3.3.3.3:80"
+        db.client.delete.assert_called_once_with("3.3.3.3:80")
+
+    def test_pop_region_no_match_returns_none(self):
+        db = self._make_client()
+        assert db.pop(False, "JP") is None
+        db.client.delete.assert_not_called()
+
+    def test_pop_region_none_delegates(self):
+        """不传 region 时委托 client.pop(原路径)"""
+        db = self._make_client()
+        db.client.pop.return_value = '{"proxy": "9.9.9.9:80"}'
+        assert db.pop(False) == '{"proxy": "9.9.9.9:80"}'
+        db.client.pop.assert_called_once_with(False)

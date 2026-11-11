@@ -14,6 +14,7 @@
                    2022/07/21: 更新count接口
                    2026/10/24: 注册WebUI Blueprint
                    2026/10/29: 移除 six 兼容层
+                   2026/11/11: /get /pop /all 支持 ?region= 地区筛选; /count 附带地区分布
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -61,21 +62,24 @@ def index():
 @app.route('/get/')
 def get():
     https = request.args.get("type", "").lower() == 'https'
-    proxy = proxy_handler.get(https)
+    region = request.args.get("region", "").strip() or None
+    proxy = proxy_handler.get(https, region)
     return apiOk(proxy.to_dict) if proxy else apiError(404, "no proxy available")
 
 
 @app.route('/pop/')
 def pop():
     https = request.args.get("type", "").lower() == 'https'
-    proxy = proxy_handler.pop(https)
+    region = request.args.get("region", "").strip() or None
+    proxy = proxy_handler.pop(https, region)
     return apiOk(proxy.to_dict) if proxy else apiError(404, "no proxy available")
 
 
 @app.route('/all/')
 def getAll():
     https = request.args.get("type", "").lower() == 'https'
-    proxies = proxy_handler.getAll(https)
+    region = request.args.get("region", "").strip() or None
+    proxies = proxy_handler.getAll(https, region)
     return apiOk({"count": len(proxies), "proxies": [_.to_dict for _ in proxies]})
 
 
@@ -95,12 +99,16 @@ def getCount():
     proxies = proxy_handler.getAll()
     http_type_dict = {}
     source_dict = {}
+    region_dict = {}
     for proxy in proxies:
         http_type = 'https' if proxy.https else 'http'
         http_type_dict[http_type] = http_type_dict.get(http_type, 0) + 1
         for source in proxy.source.split('/'):
             source_dict[source] = source_dict.get(source, 0) + 1
-    return apiOk({"http_type": http_type_dict, "source": source_dict, "count": len(proxies)})
+        region = proxy.region or 'unknown'
+        region_dict[region] = region_dict.get(region, 0) + 1
+    return apiOk({"http_type": http_type_dict, "source": source_dict,
+                  "region": region_dict, "count": len(proxies)})
 
 
 def runFlask():
