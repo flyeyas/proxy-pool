@@ -10,6 +10,7 @@
                    2020/6/22:
                    2026/10/25: 接入 .env 配置文件加载
                    2026/10/29: 移除 six 兼容层, 改用标准库
+                   2026/11/11: 正确解析地域配置的布尔环境变量
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -87,7 +88,8 @@ class ConfigHandler(metaclass=Singleton):
 
     @LazyProperty
     def proxyRegion(self):
-        return bool(os.getenv("PROXY_REGION", setting.PROXY_REGION))
+        value = os.getenv("PROXY_REGION", setting.PROXY_REGION)
+        return str(value).strip().lower() in ("true", "1", "yes", "on")
 
     @LazyProperty
     def timezone(self):

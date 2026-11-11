@@ -134,7 +134,7 @@ BASE = "http://127.0.0.1:5010"
 
 def get_proxy():
     resp = requests.get(BASE + "/get/", params={"token": TOKEN})
-    return resp.json() if resp.status_code == 200 else None
+    return resp.json()["data"] if resp.status_code == 200 else None
 
 
 def delete_proxy(proxy):
@@ -143,14 +143,17 @@ def delete_proxy(proxy):
 
 def get_html():
     retry_count = 5
-    proxy = get_proxy().get("proxy")
     while retry_count > 0:
+        proxy_info = get_proxy()
+        if not proxy_info:
+            return None
+        proxy = proxy_info["proxy"]
         try:
             return requests.get(
                 "http://www.example.com",
                 proxies={"http": "http://{}".format(proxy), "https": "https://{}".format(proxy)},
             )
-        except Exception:
+        except requests.RequestException:
             retry_count -= 1
             delete_proxy(proxy)
     return None

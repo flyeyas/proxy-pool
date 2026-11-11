@@ -41,19 +41,26 @@
 ```python
 import requests
 
+TOKEN = "pp_xxxxxxxxxx"   # 在 WebUI「Token」页生成
+BASE = "http://127.0.0.1:5010"
+
 
 def get_proxy():
-    return requests.get("http://127.0.0.1:5010/get/").json()
+    resp = requests.get(BASE + "/get/", params={"token": TOKEN})
+    return resp.json()["data"] if resp.status_code == 200 else None
 
 
 def delete_proxy(proxy):
-    requests.get("http://127.0.0.1:5010/delete/?proxy={}".format(proxy))
+    requests.delete(BASE + "/delete/", params={"proxy": proxy, "token": TOKEN})
 
 
 def get_html():
     retry_count = 5
-    proxy = get_proxy().get("proxy")
     while retry_count > 0:
+        proxy_info = get_proxy()
+        if not proxy_info:
+            return None
+        proxy = proxy_info["proxy"]
         try:
             # 使用代理访问
             html = requests.get(
@@ -64,7 +71,7 @@ def get_html():
                 },
             )
             return html
-        except Exception:
+        except requests.RequestException:
             retry_count -= 1
             # 删除代理池中代理
             delete_proxy(proxy)
@@ -77,7 +84,7 @@ def get_html():
 
 ```python
 # 只获取支持 HTTPS 的代理
-proxy = requests.get("http://127.0.0.1:5010/get/?type=https").json()
+proxy = requests.get(BASE + "/get/", params={"type": "https", "token": TOKEN}).json()["data"]
 ```
 
 ### 按地区筛选代理
@@ -87,14 +94,14 @@ proxy = requests.get("http://127.0.0.1:5010/get/?type=https").json()
 
 ```python
 # 随机获取一个美国代理
-proxy = requests.get("http://127.0.0.1:5010/get/?region=US").json()
+proxy = requests.get(BASE + "/get/", params={"region": "US", "token": TOKEN}).json()["data"]
 
 # 香港/日本的多地区 HTTPS 代理（与 type 组合使用）
-proxy = requests.get("http://127.0.0.1:5010/get/?type=https&region=HK,JP").json()
+proxy = requests.get(BASE + "/get/", params={"type": "https", "region": "HK,JP", "token": TOKEN}).json()["data"]
 
 # 查看池内地区分布, 确认可筛选的地区码
-stats = requests.get("http://127.0.0.1:5010/count/").json()
-# 示例: data.region = {"US": 12, "HK": 5, "unknown": 2}
+stats = requests.get(BASE + "/count/", params={"token": TOKEN}).json()["data"]
+# 示例: stats["region"] = {"US": 12, "HK": 5, "unknown": 2}
 ```
 
 `/pop` 与 `/all` 同样支持 `region` 参数。
@@ -103,7 +110,7 @@ stats = requests.get("http://127.0.0.1:5010/count/").json()
 
 ```python
 # 返回代理数量、类型分布、来源分布、地区分布
-stats = requests.get("http://127.0.0.1:5010/count/").json()
+stats = requests.get(BASE + "/count/", params={"token": TOKEN}).json()["data"]
 # 示例返回: {"http_type": {"http": 10, "https": 5}, "source": {"freeProxy01": 8, "freeProxy02": 7}, "region": {"US": 9, "unknown": 6}, "count": 15}
 ```
 

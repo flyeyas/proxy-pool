@@ -8,6 +8,7 @@
 -------------------------------------------------
    Change Activity:
                    2026/05/28:
+                   2026/11/11: 添加地域配置布尔值解析回归测试
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -69,6 +70,11 @@ class TestConfigHandlerDefaults:
     def test_pool_size_min_default(self, conf):
         assert conf.poolSizeMin == setting.POOL_SIZE_MIN
 
+    @pytest.mark.parametrize("default", [True, False])
+    def test_proxy_region_default(self, conf, monkeypatch, default):
+        monkeypatch.setattr(setting, "PROXY_REGION", default)
+        assert conf.proxyRegion is default
+
     def test_timezone_default(self, conf):
         assert conf.timezone == setting.TIMEZONE
 
@@ -97,3 +103,22 @@ class TestConfigHandlerEnvOverride:
         os.environ["MAX_FAIL_COUNT"] = "5"
         conf = ConfigHandler()
         assert conf.maxFailCount == 5
+
+    @pytest.mark.parametrize("value, expected", [
+        ("False", False),
+        ("false", False),
+        ("0", False),
+        ("no", False),
+        ("off", False),
+        ("  FALSE  ", False),
+        ("", False),
+        ("True", True),
+        ("true", True),
+        ("1", True),
+        ("yes", True),
+        ("on", True),
+        ("  ON  ", True),
+    ])
+    def test_proxy_region_override(self, monkeypatch, value, expected):
+        monkeypatch.setenv("PROXY_REGION", value)
+        assert ConfigHandler().proxyRegion is expected
