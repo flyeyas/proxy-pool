@@ -22,7 +22,7 @@ A crawler proxy IP pool: it periodically crawls free proxies published on the we
 Main enhancements over the original project:
 
 - **WebUI admin console** (`/webui/`): dashboard (stat cards / protocol & source distribution / proxy list with filter, search and delete), **runtime fetcher enable/disable toggles** (hot reload), log viewer, and a manual "fetch + validate now" trigger
-- **Username / password login**: protects management endpoints (one line in `.env` to enable); the data APIs accept **API tokens** for programmatic access
+- **Username / password login**: setting `WEBUI_PASSWORD` protects both management endpoints and proxy data APIs; the WebUI uses a login session and external programs use **API tokens**
 - **Fetcher monitoring**: sources failing consecutively (exception or zero output) are **auto-disabled with an annotated reason** and can be re-enabled from the WebUI
 - **`.env` based configuration**: precedence `system env > .env.local (local dev) > .env (production) > setting.py`; secrets never enter git or the image
 - **Docker multi-stage build**: the WebUI frontend is built inside the image
@@ -81,7 +81,7 @@ Common variables (see [.env.example](.env.example) and [setting.py](setting.py) 
 Open `http://127.0.0.1:5010/webui/` (build the frontend first; Docker images ship with it pre-built):
 
 - **Dashboard**: total / HTTP / HTTPS / source counts; protocol & source distribution bars; proxy table (protocol filter, keyword search, single delete); 5s auto refresh; "fetch & validate now" button
-- **Fetchers**: all sources with status; **runtime enable/disable toggles** (persisted to `runtime_config.json`, merged with the `setting.py` blacklist, hot reload); consecutive-failure auto-disable with annotated reason
+- **Fetchers**: all sources with status; **runtime enable/disable toggles** (persisted to `runtime_config.json`, merged with the `setting.py` blacklist, hot reload); consecutive-failure auto-disable with annotated reason. Each source can use verified pool proxies (default) or connect directly. Requests fall back to direct connections when no suitable verified proxy is available; settings apply on the next collection run.
 - **Tokens**: create / rename / delete **API tokens** for external programs, with a validity period (7 / 30 / 90 / 365 days or permanent) and one-click copy
 - **Scheduled tasks**: scheduler heartbeat, fetch/check/log cleanup status, next run, latest result and duration, success/error counts and executions recorded within the last hour; 5s auto refresh
 - **Logs**: tail of `fetch` / `checker` / `scheduler` etc., selectable line count, auto refresh
@@ -120,7 +120,7 @@ Responses use a unified envelope (`code` always equals the HTTP status):
 | `/count` | GET | Pool statistics with distribution | none |
 | `/delete` | DELETE | Delete a proxy (GET also accepted); `{"deleted": true}` or 404 | `?proxy=host:port` |
 | `/fetchers` | GET | Fetcher list with status and stats | none |
-| `/fetchers/<class>` | PATCH | Enable/disable a fetcher, body `{"enabled": bool}` | none |
+| `/fetchers/<class>` | PATCH | Configure a fetcher with `{"enabled": bool, "use_proxy": bool}` | Supply at least one field; `use_proxy` defaults to `true`, with direct fallback when the pool is empty |
 | `/refresh` | POST | Trigger one fetch + validate run (202, runs in background) | none |
 | `/scheduler` | GET | Scheduler heartbeat, task status and recent executions | none |
 | `/logs` | GET | Log file list / tail content | optional `?name=fetch&lines=200` |
@@ -171,7 +171,7 @@ The image is a multi-stage build (Node builds the frontend → Python runtime), 
 docker build -t flyeyas/proxy-pool .
 
 # Recommended: self-contained docker compose deployment
-# (bundled Redis with persistence, config from .env, logs mounted to ./log/)
+# (separate persistent volumes for Redis and runtime settings, config from .env, logs in ./log/)
 cp .env.example .env && vim .env   # REDIS_PASSWORD must match the password in DB_CONN; set WEBUI_PASSWORD
 docker compose up -d --build
 
@@ -179,10 +179,13 @@ docker compose up -d --build
 docker run -d --env DB_CONN=redis://:password@ip:port/0 \
   --env WEBUI_PASSWORD=change-me \
   -p 5010:5010 -v /host/log/dir:/app/log \
+  -v proxy_pool_runtime:/app/data \
   flyeyas/proxy-pool
 ```
 
 `/app/log` is declared as a volume — mount it and use `tail -F` to follow the current log files. File logs rotate at clock-hour boundaries, retain the latest seven days by age, and support shared writes from multiple processes. Expired archives are cleaned at startup and every hour. See [docs/docker.md](docs/docker.md) (Chinese) for details.
+
+Docker stores runtime settings at `/app/data/runtime_config.json`. Compose mounts the `runtime_data` named volume; the manual example uses `proxy_pool_runtime`. Reusing the volume preserves API tokens, fetcher settings, and statistics across container recreation. Before upgrading an existing deployment, back up and migrate the old container's file using the [migration instructions](docs/docker.md#迁移运行时配置) (Chinese).
 
 ## Extending Proxy Sources
 

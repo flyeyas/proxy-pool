@@ -12,6 +12,7 @@ docker run -d --name proxy_pool \
   --env WEBUI_PASSWORD=change-me \
   -p 5010:5010 \
   -v /宿主机日志路径/log:/app/log \
+  -v proxy_pool_runtime:/app/data \
   flyeyas/proxy-pool:latest
 ```
 
@@ -20,6 +21,9 @@ docker run -d --name proxy_pool \
 - `DB_CONN`：数据库连接（覆盖 `setting.py`，也支持 `.env` 文件）
 - `WEBUI_USERNAME` / `WEBUI_PASSWORD`：WebUI 登录账号
 - `FETCHER_AUTO_DISABLE_FAILS`：代理源连续失败自动禁用阈值
+- `RUNTIME_CONFIG_FILE`：运行时配置文件路径，镜像默认 `/app/data/runtime_config.json`。Compose 固定为该路径，与 `runtime_data` 数据卷对应；本地直接运行默认仍是项目根目录的 `runtime_config.json`。
+
+`/app/data` 保存 API Token、代理源启停/代理开关和采集统计。上例使用命名卷 `proxy_pool_runtime`，后续创建容器时挂载同一卷即可继续使用原配置；首次运行无需手动创建 JSON 文件。也可用 `-v /宿主机数据目录:/app/data` 保存到宿主机目录。
 
 ## 在宿主机查看日志
 
@@ -47,7 +51,7 @@ ls /var/log/proxy_pool/
 
 ## 使用 docker-compose
 
-`docker-compose.yml` 为**自包含部署**：应用 + 内置 Redis（AOF 持久化 + 数据卷，密码取自 `.env` 的 `REDIS_PASSWORD`），配置统一从 `.env` 读取，日志挂载到 `./log/`，并设置 `restart: unless-stopped`：
+`docker-compose.yml` 为**自包含部署**：应用 + 内置 Redis（AOF 持久化 + 数据卷，密码取自 `.env` 的 `REDIS_PASSWORD`），运行时配置保存到独立的 `runtime_data` 数据卷，日志挂载到 `./log/`，并设置 `restart: unless-stopped`：
 
 ```yaml
 services:
@@ -58,14 +62,17 @@ services:
       - "5010:5010"
     env_file:
       - .env
+    environment:
+      RUNTIME_CONFIG_FILE: /app/data/runtime_config.json
     volumes:
       - ./log:/app/log
+      - runtime_data:/app/data
     depends_on:
       - proxy_redis
     restart: unless-stopped
 
   proxy_redis:
-    image: redis:alpine
+    image: redis:8-alpine
     container_name: proxy_redis
     command: ["redis-server", "--appendonly", "yes",
               "--requirepass", "${REDIS_PASSWORD:-proxypool}"]
@@ -78,6 +85,7 @@ services:
 
 volumes:
   redis_data:
+  runtime_data:
 ```
 
 部署步骤：
@@ -92,7 +100,31 @@ docker compose up -d --build
     - `DB_CONN` 使用服务名 `proxy_redis:6379`（compose 内网直连，不经过公网）
     - Redis 端口只发布到宿主机 `127.0.0.1:26739`：宿主机上裸跑的程序（`python proxyPool.py`）可通过 `DB_CONN=redis://:密码@127.0.0.1:26739/0` 连同一份数据，且不暴露公网
     - Redis 数据在命名卷 `redis_data` 中持久化，重建容器不丢失
+    - API Token、代理源设置和统计在命名卷 `runtime_data` 中持久化，`up --force-recreate` 或普通 `down` 后再 `up` 会继续使用原配置；`down -v` 会删除这两个命名卷。
     - 如需改用外部 Redis：注释 `.env` 中的 `REDIS_PASSWORD`，把 `DB_CONN` 指向外部地址即可（compose 中的 proxy_redis 可删除或保留闲置）
+
+## 迁移运行时配置
+
+旧镜像将配置写在容器内的 `/app/runtime_config.json`。升级前先停止应用并导出旧文件，再将它导入新数据卷，避免重建容器时丢失已有 Token 和代理源设置：
+
+```console
+(
+set -eu
+runtime_backup_dir=$(mktemp -d)
+printf '运行时配置备份目录: %s\n' "$runtime_backup_dir"
+docker compose stop proxy_pool
+docker cp proxy_pool:/app/runtime_config.json "$runtime_backup_dir/runtime_config.json"
+docker compose build proxy_pool
+docker compose run --rm --no-deps -T --entrypoint sh proxy_pool -c \
+  'umask 077; set -C; cat > /app/data/runtime_config.json' \
+  < "$runtime_backup_dir/runtime_config.json"
+docker compose up -d
+)
+```
+
+导入命令仅适用于空的新数据卷，目标文件已存在时会报错并保留原文件。若旧容器从未创建过运行时配置，可跳过导出和导入；如果原先将 `/app/runtime_config.json` 绑定到了宿主机文件，也可将该文件作为导入输入。迁移后仍保留备份目录中的原文件。
+
+手动 `docker run` 部署时，也应先导出旧文件，再将其复制为宿主机数据目录下的 `runtime_config.json` 并挂载该目录到 `/app/data`。已有部署如果继续将单个文件挂载到 `/app/runtime_config.json`，需同时设置 `--env RUNTIME_CONFIG_FILE=/app/runtime_config.json`。
 
 ## 容器环境注意事项
 

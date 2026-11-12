@@ -75,6 +75,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled })
     }),
+  fetcherProxyToggle: (className, useProxy) =>
+    request(`/fetchers/${encodeURIComponent(className)}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ use_proxy: useProxy })
+    }),
   logList: () => request('/logs/'),
   logContent: (name, lines) =>
     request(`/logs/?name=${encodeURIComponent(name)}&lines=${lines}`)

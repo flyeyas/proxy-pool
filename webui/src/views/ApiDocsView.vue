@@ -7,7 +7,7 @@ const endpoints = [
   { method: 'GET', path: '/count/', desc: '代理数量统计（含协议/来源/地区分布）', params: '' },
   { method: 'DELETE', path: '/delete/', desc: '删除代理，成功 {"deleted": true}，不存在 404', params: '?proxy=host:port' },
   { method: 'GET', path: '/fetchers/', desc: '代理源列表及状态、抓取统计', params: '' },
-  { method: 'PATCH', path: '/fetchers/<类名>/', desc: '启停代理源', params: 'body {"enabled": bool}' },
+  { method: 'PATCH', path: '/fetchers/<类名>/', desc: '启停代理源或设置采集代理（池空时直连）', params: 'body 可含 {"enabled": bool, "use_proxy": bool}，至少一个字段' },
   { method: 'POST', path: '/refresh/', desc: '手动触发一次抓取+校验（202 后台执行，重复触发 409）', params: '' },
   { method: 'GET', path: '/scheduler/', desc: '调度器心跳、定时任务状态与最近一小时的执行记录', params: '' },
   { method: 'GET', path: '/logs/', desc: '日志文件列表（含大小）/ 指定日志尾部内容', params: '?name=fetch&lines=200' },

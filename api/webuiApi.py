@@ -10,6 +10,7 @@
                    2026/10/24: WebUI后台接口
                    2026/10/25: 新增账号登录(WEBUI_USERNAME/WEBUI_PASSWORD)
                    2026/11/12: 新增定时任务状态查询
+                   2026/11/12: 新增每个采集源的代理使用开关
 -------------------------------------------------
 """
 __author__ = 'flyeyas'
@@ -34,7 +35,8 @@ from handler.configHandler import ConfigHandler
 from fetcher.baseFetcher import BaseFetcher
 from helper.fetch import _get_sources_dir, _load_module
 from helper.fetcherConfig import (getRuntimeExclude, toggleRuntimeExclude,
-                                  getAutoDisable, getFetcherStats, enableFetcher)
+                                  getAutoDisable, getFetcherStats, enableFetcher,
+                                  getFetcherProxySettings, getFetcherUseProxy, setFetcherUseProxy)
 from helper.apiToken import (listTokens, generateToken, deleteToken,
                              verifyApiToken, renameToken)
 from helper.schedulerStatus import getSchedulerStatus
@@ -222,6 +224,23 @@ def webui(filename='index.html'):
     return send_from_directory(WEBUI_DIST_PATH, filename)
 
 
+def _fetcherClasses():
+    sources_dir = _get_sources_dir()
+    seen = set()
+    for filename in os.listdir(sources_dir):
+        if not filename.endswith('.py') or filename.startswith('_'):
+            continue
+        module = _load_module('fetcher.sources.' + filename[:-3], os.path.join(sources_dir, filename))
+        if module is None:
+            continue
+        for attr_name in dir(module):
+            attr = getattr(module, attr_name, None)
+            if (isinstance(attr, type) and issubclass(attr, BaseFetcher)
+                    and attr is not BaseFetcher and attr.name and attr.__name__ not in seen):
+                seen.add(attr.__name__)
+                yield attr
+
+
 @webui_bp.route('/fetchers/')
 def fetchers():
     """列出全部代理源(含 disabled), 及其启用/黑名单状态与抓取统计"""
@@ -230,35 +249,22 @@ def fetchers():
     runtime_exclude = set(getRuntimeExclude())
     auto_exclude = set(getAutoDisable())
     stats = getFetcherStats()
-    sources_dir = _get_sources_dir()
+    proxy_settings = getFetcherProxySettings()
     result = []
-    for filename in os.listdir(sources_dir):
-        if not filename.endswith('.py') or filename.startswith('_'):
-            continue
-        module_name = "fetcher.sources.%s" % filename[:-3]
-        module = _load_module(module_name, os.path.join(sources_dir, filename))
-        if module is None:
-            continue
-        for attr_name in dir(module):
-            attr = getattr(module, attr_name, None)
-            if (attr and isinstance(attr, type)
-                    and issubclass(attr, BaseFetcher)
-                    and attr is not BaseFetcher
-                    and attr.name):
-                class_name = attr.__name__
-                result.append({
-                    "name": attr.name,
-                    "class_name": class_name,
-                    "url": getattr(attr, 'url', '') or '',
-                    "enabled": bool(getattr(attr, 'enabled', True)),
-                    "excluded": class_name in setting_exclude
-                                or class_name in runtime_exclude
-                                or class_name in auto_exclude,
-                    "setting_excluded": class_name in setting_exclude,
-                    "runtime_excluded": class_name in runtime_exclude,
-                    "auto_disabled": class_name in auto_exclude,
-                    "stats": stats.get(class_name, {}),
-                })
+    for attr in _fetcherClasses():
+        class_name = attr.__name__
+        result.append({
+            'name': attr.name, 'class_name': class_name,
+            'url': getattr(attr, 'url', '') or '',
+            'enabled': bool(getattr(attr, 'enabled', True)),
+            'excluded': class_name in setting_exclude
+                        or class_name in runtime_exclude or class_name in auto_exclude,
+            'setting_excluded': class_name in setting_exclude,
+            'runtime_excluded': class_name in runtime_exclude,
+            'auto_disabled': class_name in auto_exclude,
+            'stats': stats.get(class_name, {}),
+            'use_proxy': proxy_settings.get(class_name, True),
+        })
     result.sort(key=lambda item: item["name"])
     return apiOk({"fetchers": result})
 
@@ -266,21 +272,34 @@ def fetchers():
 @webui_bp.route('/fetchers/<class_name>/', methods=['PATCH'])
 def fetcherToggle(class_name):
     """
-    开关代理源: body {"enabled": bool}
+    配置代理源: body {"enabled": bool} 和/或 {"use_proxy": bool}
     - 禁用: 写入手动黑名单; 启用: 移出手动+自动禁用名单并重置抓取统计
     """
     data = request.get_json(silent=True) or {}
-    enable = bool(data.get('enabled'))
+    if not isinstance(data, dict) or not any(key in data for key in ('enabled', 'use_proxy')):
+        return apiError(400, 'enabled or use_proxy is required')
+    if any(key in data and type(data[key]) is not bool for key in ('enabled', 'use_proxy')):
+        return apiError(400, 'enabled and use_proxy must be booleans')
     class_name = (class_name or '').strip()
     if not class_name or not _LOG_NAME_PATTERN.match(class_name):
         return apiError(400, "invalid fetcher class name")
-    if enable:
-        manual, auto = enableFetcher(class_name)
+    if not any(attr.__name__ == class_name for attr in _fetcherClasses()):
+        return apiError(404, 'fetcher not found')
+    if 'enabled' in data:
+        if data['enabled']:
+            manual, auto = enableFetcher(class_name)
+        else:
+            manual = toggleRuntimeExclude(class_name, False)
+            auto = getAutoDisable()
     else:
-        manual = toggleRuntimeExclude(class_name, False)
-        auto = getAutoDisable()
-    return apiOk({"fetcher": class_name, "excluded": not enable,
-                  "fetcher_exclude": manual, "auto_disable": auto})
+        manual, auto = getRuntimeExclude(), getAutoDisable()
+    if 'use_proxy' in data:
+        setFetcherUseProxy(class_name, data['use_proxy'])
+    return apiOk({'fetcher': class_name,
+                  'excluded': class_name in manual or class_name in auto
+                              or class_name in ConfigHandler().fetcherExclude,
+                  'fetcher_exclude': manual, 'auto_disable': auto,
+                  'use_proxy': getFetcherUseProxy(class_name)})
 
 
 def _runFetchAndCheck(lock_handle=None):

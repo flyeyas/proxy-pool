@@ -9,6 +9,7 @@
    Change Activity:
                    2019/08/06: 多线程采集
                    2026/05/31: 重构为动态加载 fetcher 插件
+                   2026/11/12: 按采集源配置使用已验证代理
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -21,6 +22,7 @@ from threading import Thread
 from helper.proxy import Proxy
 from helper.check import DoValidator
 from helper.fetcherConfig import getEffectiveExclude, recordFetchResult
+from helper.fetcherProxy import fetcherProxyContext
 from handler.logHandler import LogHandler
 from handler.configHandler import ConfigHandler
 from fetcher.baseFetcher import BaseFetcher
@@ -108,15 +110,16 @@ class _ThreadFetcher(Thread):
         proxy_count = 0
         error = ''
         try:
-            for proxy in self.fetcher_class().fetch():
-                self.log.info('ProxyFetch - %s: %s ok' % (fetcher_name, proxy.ljust(23)))
-                proxy = proxy.strip()
-                if proxy in self.proxy_dict:
-                    self.proxy_dict[proxy].add_source(fetcher_name)
-                else:
-                    self.proxy_dict[proxy] = Proxy(
-                        proxy, source=fetcher_name)
-                proxy_count += 1
+            with fetcherProxyContext(class_name):
+                for proxy in self.fetcher_class().fetch():
+                    self.log.info('ProxyFetch - %s: %s ok' % (fetcher_name, proxy.ljust(23)))
+                    proxy = proxy.strip()
+                    if proxy in self.proxy_dict:
+                        self.proxy_dict[proxy].add_source(fetcher_name)
+                    else:
+                        self.proxy_dict[proxy] = Proxy(
+                            proxy, source=fetcher_name)
+                    proxy_count += 1
         except Exception as e:
             self.log.error("ProxyFetch - {func}: error".format(func=fetcher_name))
             self.log.error(str(e))

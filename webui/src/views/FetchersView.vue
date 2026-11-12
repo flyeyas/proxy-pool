@@ -8,6 +8,7 @@ const error = ref('')
 const message = ref('')
 const messageIsErr = ref(false)
 const toggling = ref('')
+const proxyToggling = ref('')
 
 const activeCount = computed(
   () => fetchers.value.filter((f) => f.enabled && !f.excluded).length
@@ -49,7 +50,7 @@ function autoDisableTip(f) {
 async function toggle(f) {
   toggling.value = f.class_name
   try {
-    await api.fetcherToggle(f.class_name, !f.excluded)
+    await api.fetcherToggle(f.class_name, f.excluded)
     if (f.excluded) {
       flash(
         f.auto_disabled
@@ -64,6 +65,20 @@ async function toggle(f) {
     flash('操作失败: ' + e.message, true)
   } finally {
     toggling.value = ''
+  }
+}
+
+async function toggleProxy(f) {
+  proxyToggling.value = f.class_name
+  try {
+    const response = await api.fetcherProxyToggle(f.class_name, !f.use_proxy)
+    f.use_proxy = response.data.use_proxy
+    flash(`${f.name} 已设置为${f.use_proxy ? '优先使用已验证代理，池空时直连' : '始终直连采集'}，下轮采集生效`)
+    await load()
+  } catch (e) {
+    flash('设置失败: ' + e.message, true)
+  } finally {
+    proxyToggling.value = ''
   }
 }
 
@@ -89,6 +104,7 @@ load()
       <div v-if="message" class="flash" :class="{ err: messageIsErr }" style="margin-top: 8px">
         {{ message }}
       </div>
+      <p class="fetcher-proxy-tip">开启“使用代理”后优先使用池内已验证代理；池内没有适合当前请求的代理时直连。每个采集源可独立设置。</p>
       <div class="table-wrap">
         <table v-if="fetchers.length">
           <thead>
@@ -96,6 +112,7 @@ load()
               <th>名称</th>
               <th>站点</th>
               <th>状态</th>
+              <th>采集代理</th>
               <th>最近成功</th>
               <th>操作</th>
             </tr>
@@ -124,13 +141,21 @@ load()
                 </span>
                 <span v-else class="badge badge-ok">抓取中</span>
               </td>
+              <td>
+                <button class="btn" :class="{ active: f.use_proxy }"
+                        :aria-pressed="f.use_proxy"
+                        :disabled="proxyToggling === f.class_name || toggling === f.class_name"
+                        @click="toggleProxy(f)">
+                  {{ proxyToggling === f.class_name ? '设置中…' : f.use_proxy ? '使用代理' : '直连采集' }}
+                </button>
+              </td>
               <td style="color: var(--text-secondary)">{{ (f.stats && f.stats.last_success) || '-' }}</td>
               <td>
                 <button
                   v-if="f.enabled && !f.setting_excluded"
                   class="btn"
                   :class="{ 'btn-danger': !f.excluded }"
-                  :disabled="toggling === f.class_name"
+                  :disabled="toggling === f.class_name || proxyToggling === f.class_name"
                   @click="toggle(f)"
                 >
                   {{ toggling === f.class_name ? '…' : f.excluded ? '启用' : '禁用' }}
@@ -145,3 +170,7 @@ load()
     </div>
   </div>
 </template>
+
+<style scoped>
+.fetcher-proxy-tip { margin: 12px 0; color: var(--text-secondary); font-size: 12px; line-height: 1.7; }
+</style>

@@ -19,7 +19,7 @@ import helper.runtimeConfig as runtime_config_mod
 from helper.fetcherConfig import (
     getRuntimeExclude, setRuntimeExclude, toggleRuntimeExclude,
     getAutoDisable, getFetcherStats, getEffectiveExclude,
-    recordFetchResult, enableFetcher
+    recordFetchResult, enableFetcher, getFetcherUseProxy, setFetcherUseProxy
 )
 
 
@@ -110,3 +110,34 @@ class TestFetchStats:
         recordFetchResult("GFetcher", ok=False, auto_disable_fails=1)
         effective = set(getEffectiveExclude())
         assert {"FFetcher", "GFetcher"} <= effective
+
+
+class TestFetcherProxySettings:
+    def test_default_and_independent_switches(self):
+        assert getFetcherUseProxy('AFetcher') is True
+        setFetcherUseProxy('AFetcher', False)
+        assert getFetcherUseProxy('AFetcher') is False
+        assert getFetcherUseProxy('BFetcher') is True
+        setFetcherUseProxy('AFetcher', True)
+        assert getFetcherUseProxy('AFetcher') is True
+
+    def test_source_stats_and_enable_do_not_clear_proxy_setting(self):
+        setFetcherUseProxy('AFetcher', False)
+        recordFetchResult('AFetcher', False, auto_disable_fails=1)
+        enableFetcher('AFetcher')
+        assert getFetcherUseProxy('AFetcher') is False
+
+    def test_preserves_tokens_and_other_settings(self, tmp_config_file):
+        from helper.apiToken import generateToken, verifyApiToken
+        token = generateToken('test')
+        setRuntimeExclude(['BFetcher'])
+        setFetcherUseProxy('AFetcher', False)
+        recordFetchResult('AFetcher', True)
+        assert verifyApiToken(token['token'])
+        assert getRuntimeExclude() == ['BFetcher']
+        assert getFetcherUseProxy('AFetcher') is False
+
+    @pytest.mark.parametrize('value', [None, 0, 1, 'false', [], {}])
+    def test_rejects_non_boolean_setting(self, value):
+        with pytest.raises(ValueError):
+            setFetcherUseProxy('AFetcher', value)

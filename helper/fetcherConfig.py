@@ -10,6 +10,7 @@
                    2026/10/25: 运行时黑名单, 支持在 WebUI 后台启停代理源
                    2026/10/25: 读写迁移至 helper/runtimeConfig.py
                    2026/10/25: 抓取结果统计与连续失败自动禁用
+                   2026/11/12: 采集代理开关, 使用跨进程配置事务
 -------------------------------------------------
 """
 __author__ = 'flyeyas'
@@ -17,13 +18,14 @@ __author__ = 'flyeyas'
 import threading
 from datetime import datetime
 
-from helper.runtimeConfig import readConfig, writeConfig
+from helper.runtimeConfig import readConfig, updateConfig
 
 # 同进程内统计读写的互斥(抓取线程并发上报)
 _LOCK = threading.Lock()
 
 _AUTO_DISABLE_KEY = 'fetcher_auto_disable'
 _STATS_KEY = 'fetcher_stats'
+_PROXY_KEY = 'fetcher_use_proxy'
 _TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 
@@ -33,9 +35,7 @@ def getRuntimeExclude():
 
 
 def setRuntimeExclude(class_names):
-    config = readConfig()
-    config['fetcher_exclude'] = sorted(set(class_names))
-    writeConfig(config)
+    updateConfig(lambda config: config.update(fetcher_exclude=sorted(set(class_names))))
 
 
 def toggleRuntimeExclude(class_name, enable):
@@ -45,15 +45,40 @@ def toggleRuntimeExclude(class_name, enable):
     :param enable: True 启用(移出黑名单) / False 禁用(加入黑名单)
     :return: list 最新手动黑名单
     """
-    config = readConfig()
-    exclude = set(config.get('fetcher_exclude', []))
-    if enable:
-        exclude.discard(class_name)
-    else:
-        exclude.add(class_name)
-    config['fetcher_exclude'] = sorted(exclude)
-    writeConfig(config)
-    return sorted(exclude)
+    def update(config):
+        exclude = set(config.get('fetcher_exclude', []))
+        if enable:
+            exclude.discard(class_name)
+        else:
+            exclude.add(class_name)
+        config['fetcher_exclude'] = sorted(exclude)
+        return sorted(exclude)
+    return updateConfig(update)
+
+
+def getFetcherProxySettings():
+    settings = readConfig().get(_PROXY_KEY, {})
+    if not isinstance(settings, dict):
+        return {}
+    return {name: value for name, value in settings.items() if type(value) is bool}
+
+
+def getFetcherUseProxy(class_name):
+    """默认优先使用已验证代理, 未配置或代理池为空时仍可采集。"""
+    return getFetcherProxySettings().get(class_name, True)
+
+
+def setFetcherUseProxy(class_name, use_proxy):
+    if type(use_proxy) is not bool:
+        raise ValueError('use_proxy must be a boolean')
+    def update(config):
+        settings = config.get(_PROXY_KEY, {})
+        if not isinstance(settings, dict):
+            settings = {}
+        settings[class_name] = use_proxy
+        config[_PROXY_KEY] = settings
+        return use_proxy
+    return updateConfig(update)
 
 
 def getAutoDisable():
@@ -82,8 +107,7 @@ def recordFetchResult(class_name, ok, error='', auto_disable_fails=5):
     :return: dict 该源最新统计
     """
     now = datetime.now().strftime(_TIME_FORMAT)
-    with _LOCK:
-        config = readConfig()
+    def update(config):
         stats_all = config.get(_STATS_KEY, {})
         stat = stats_all.get(class_name, {})
         stat['total_ok'] = stat.get('total_ok', 0) + (1 if ok else 0)
@@ -106,8 +130,9 @@ def recordFetchResult(class_name, ok, error='', auto_disable_fails=5):
                 config[_AUTO_DISABLE_KEY] = sorted(auto)
         stats_all[class_name] = stat
         config[_STATS_KEY] = stats_all
-        writeConfig(config)
-    return stat
+        return stat
+    with _LOCK:
+        return updateConfig(update)
 
 
 def enableFetcher(class_name):
@@ -115,8 +140,7 @@ def enableFetcher(class_name):
     启用指定代理源: 移出手动与自动禁用名单, 并重置统计重新观察
     :return: (手动黑名单, 自动禁用名单)
     """
-    with _LOCK:
-        config = readConfig()
+    def update(config):
         exclude = set(config.get('fetcher_exclude', []))
         auto = set(config.get(_AUTO_DISABLE_KEY, []))
         exclude.discard(class_name)
@@ -126,5 +150,6 @@ def enableFetcher(class_name):
         stats_all = config.get(_STATS_KEY, {})
         stats_all.pop(class_name, None)
         config[_STATS_KEY] = stats_all
-        writeConfig(config)
-    return sorted(exclude), sorted(auto)
+        return sorted(exclude), sorted(auto)
+    with _LOCK:
+        return updateConfig(update)

@@ -22,7 +22,7 @@
 相对原项目的主要增强：
 
 - **WebUI 管理后台**（`/webui/`）：仪表盘（统计卡片 / 协议与来源分布 / 代理列表筛选搜索删除）、**代理源后台启停开关**（热生效）、运行日志查看、手动触发"抓取 + 校验"
-- **账号密码登录**：保护管理接口（`.env` 一行配置即可启用），对外的代理 API 不受影响
+- **账号密码登录**：设置 `WEBUI_PASSWORD` 后，管理接口和代理数据 API 均需授权；WebUI 使用登录会话，外部程序使用 API Token
 - **`.env` 环境配置**：`系统环境变量 > .env.local(本地) > .env(线上) > setting.py` 四级优先，密码等敏感信息不入库
 - **Docker 多阶段构建**：镜像内自动构建 WebUI 前端
 
@@ -80,7 +80,7 @@ cd webui && npm install && npm run build
 访问 `http://127.0.0.1:5010/webui/`（需先构建前端，Docker 部署已内置）：
 
 - **仪表盘**：代理总数 / HTTP / HTTPS / 来源数；协议与来源分布条形图；代理列表（协议筛选、关键字搜索、单条删除）；5 秒自动刷新；「立即抓取并校验」按钮
-- **代理源**：全部代理源状态，支持**后台启停开关**（写入运行时黑名单 `runtime_config.json`，与 `setting.py` 黑名单并集生效，热生效）
+- **代理源**：全部代理源状态，支持**后台启停开关**（写入运行时黑名单 `runtime_config.json`，与 `setting.py` 黑名单并集生效，热生效）；每个源可独立设置“使用代理”或“直连采集”，默认优先使用已验证代理，池内没有适合当前请求的代理时直连，下轮采集生效
 - **Token**：生成/删除 **API Token**（供爬虫等外部程序直连接口），可设置有效期（7 天 / 30 天 / 90 天 / 1 年 / 永久），支持一键复制
 - **定时任务**：调度器心跳、采集/校验/日志清理的运行状态、下次执行时间、最近结果与耗时、成功/失败计数及最近一小时的执行记录；5 秒自动刷新
 - **日志**：查看 `fetch` / `checker` / `scheduler` 等日志尾部内容，行数可选、自动刷新
@@ -119,7 +119,7 @@ cd webui && npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.
 | `/count` | GET | 代理数量统计（含分布） | 无 |
 | `/delete` | DELETE | 删除代理（兼容 GET），返回 `{"deleted": true}` 或 404 | `?proxy=host:port` |
 | `/fetchers` | GET | 代理源列表及状态 | 无 |
-| `/fetchers/<类名>` | PATCH | 启停代理源，body `{"enabled": bool}` | 无 |
+| `/fetchers/<类名>` | PATCH | 配置代理源，body 可含 `{"enabled": bool, "use_proxy": bool}` | 至少一个字段；`use_proxy` 默认 `true`，池空时直连 |
 | `/refresh` | POST | 手动触发一次抓取 + 校验（202，后台执行） | 无 |
 | `/scheduler` | GET | 调度器心跳、定时任务状态与最近执行记录 | 无 |
 | `/logs` | GET | 日志文件列表 / 尾部内容 | 可选 `?name=fetch&lines=200` |
@@ -169,7 +169,7 @@ def get_html():
 # 构建镜像
 docker build -t flyeyas/proxy-pool .
 
-# 推荐: docker compose 自包含部署(内置Redis+持久化, 配置读 .env, 日志挂到宿主机 ./log/)
+# 推荐: docker compose 自包含部署(Redis 和运行时配置分别持久化, 配置读 .env, 日志挂到 ./log/)
 cp .env.example .env && vim .env   # REDIS_PASSWORD 与 DB_CONN 密码一致, WEBUI_PASSWORD
 docker compose up -d --build
 
@@ -177,10 +177,13 @@ docker compose up -d --build
 docker run -d --env DB_CONN=redis://:password@ip:port/0 \
   --env WEBUI_PASSWORD=change-me \
   -p 5010:5010 -v /宿主机日志目录:/app/log \
+  -v proxy_pool_runtime:/app/data \
   flyeyas/proxy-pool
 ```
 
 容器把 `/app/log` 声明为卷，挂载后在宿主机使用 `tail -F` 查看当前日志。文件日志按整点切割、按时间保留最近七天，启动时和每小时清理过期归档，支持多进程共享写入，详见 [docs/docker.md](docs/docker.md)。
+
+Docker 将运行时配置保存为 `/app/data/runtime_config.json`。Compose 自动挂载 `runtime_data` 命名卷，手动运行时使用上例的 `proxy_pool_runtime` 命名卷，重建容器后保留 API Token、代理源开关和统计。旧部署升级前，请按 [迁移运行时配置](docs/docker.md#迁移运行时配置) 备份并迁移旧容器中的文件。
 
 ## 扩展代理源
 

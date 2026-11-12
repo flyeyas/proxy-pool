@@ -300,6 +300,7 @@ class TestIhuanFetcher(object):
         mock_resp = MagicMock()
         mock_resp.text = html
         # 第一次 get 获取 cookie，第二次 get 返回数据
+        mock_resp.content = html.encode()
         mock_session.get.return_value = mock_resp
         mock_requests.session.return_value = mock_session
 
@@ -307,6 +308,8 @@ class TestIhuanFetcher(object):
         assert "1.2.3.4:8080" in result
         assert "5.6.7.8:3128" in result
         assert mock_session.get.call_count == 2
+        assert mock_session.trust_env is False
+        mock_session.close.assert_called_once()
 
     @patch("fetcher.sources.ihuan.requests")
     def test_fetch_empty_table_returns_empty(self, mock_requests):
@@ -315,6 +318,7 @@ class TestIhuanFetcher(object):
         mock_session = MagicMock()
         mock_resp = MagicMock()
         mock_resp.text = html
+        mock_resp.content = html.encode()
         mock_session.get.return_value = mock_resp
         mock_requests.session.return_value = mock_session
 

@@ -8,12 +8,12 @@
 -------------------------------------------------
    Change Activity:
                    2026/05/31:
+                   2026/11/12: Cookie 会话通过统一采集代理请求
 -------------------------------------------------
 """
 # pyright: reportAttributeAccessIssue=false
 __author__ = 'JHao'
 
-from lxml import etree
 import requests
 
 from fetcher.baseFetcher import BaseFetcher
@@ -28,17 +28,22 @@ class IhuanFetcher(BaseFetcher):
     enabled = True
 
     def fetch(self):
-        wb = WebRequest()
         session = requests.session()
-        headers = wb.header
-        session.get(self.url, headers=headers, verify=False) # 必须先请求一起获取cookie
-        res = session.get(self.url, headers=headers, verify=False)
-        tree = etree.HTML(res.text)
-        for item in tree.xpath("//table[@class='table table-hover table-bordered']//tr"):
-            ip = "".join(item.xpath("./td[1]//text()")).strip()
-            port = "".join(item.xpath("./td[2]//text()")).strip()
-            if ip and port:
-                yield "%s:%s" % (ip, port)
+        session.trust_env = False
+        try:
+            wb = WebRequest(session=session)
+            headers = wb.header
+            wb.get(self.url, header=headers, timeout=10, verify=False)
+            tree = wb.get(self.url, header=headers, timeout=10, verify=False).tree
+            if tree is None:
+                return
+            for item in tree.xpath("//table[@class='table table-hover table-bordered']//tr"):
+                ip = "".join(item.xpath("./td[1]//text()")).strip()
+                port = "".join(item.xpath("./td[2]//text()")).strip()
+                if ip and port:
+                    yield "%s:%s" % (ip, port)
+        finally:
+            session.close()
 
 
 if __name__ == '__main__':

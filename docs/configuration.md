@@ -38,6 +38,14 @@ API 服务监听的端口。
 
 - 默认值：`5010`
 
+### `RUNTIME_CONFIG_FILE`
+
+运行时配置文件路径，保存 API Token、代理源启停/代理开关和采集统计。路径在进程启动时读取，修改后需同时重启 API 服务和调度器。
+
+- 本地默认：项目根目录的 `runtime_config.json`，继续读取原有配置。
+- Docker 镜像与 Compose 默认：`/app/data/runtime_config.json`，通过数据卷持久化。
+- 首次写入时自动创建父目录和文件；自定义路径也应放在持久化目录中。旧文件迁移步骤见 [Docker 部署](docker.md#迁移运行时配置)。
+
 ## 数据库配置
 
 ### `DB_CONN`
@@ -91,7 +99,7 @@ PROXY_FETCHER_EXCLUDE = [
 
 如需永久禁用，建议直接在源文件中设置 `enabled = False`。
 
-除了修改本文件，也可以直接在 [WebUI 后台](webui.md) 的"代理源"页点击开关启停代理源（运行时黑名单，持久化在项目根目录 `runtime_config.json`，不入库）。两份黑名单取并集生效，每轮抓取前读取，热生效、无需重启进程。
+除了修改本文件，也可以直接在 [WebUI 后台](webui.md) 的"代理源"页点击开关启停代理源（运行时黑名单，持久化在 `RUNTIME_CONFIG_FILE` 指定的文件中，本地默认是项目根目录 `runtime_config.json`，不入库）。两份黑名单取并集生效，每轮抓取前读取，热生效、无需重启进程。
 
 ### `FETCHER_AUTO_DISABLE_FAILS`
 

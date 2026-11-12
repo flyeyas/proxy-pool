@@ -318,6 +318,54 @@ class TestFetcherToggle:
         resp = client.patch("/fetchers/KuaidailiFetcher/", json={"enabled": False})
         assert resp.status_code == 401
 
+    def test_fetchers_expose_default_proxy_setting(self, client, runtime_config):
+        fetchers = client.get('/fetchers/').get_json()['data']['fetchers']
+        assert all(item['use_proxy'] is True for item in fetchers)
+
+    def test_proxy_setting_changes_without_disabling_source(self, client, runtime_config):
+        response = client.patch('/fetchers/KuaidailiFetcher/', json={'use_proxy': False})
+        assert response.status_code == 200
+        assert response.get_json()['data']['use_proxy'] is False
+        fetchers = client.get('/fetchers/').get_json()['data']['fetchers']
+        item = next(item for item in fetchers if item['class_name'] == 'KuaidailiFetcher')
+        assert item['use_proxy'] is False
+        assert item['runtime_excluded'] is False
+        assert client.patch('/fetchers/KuaidailiFetcher/', json={'use_proxy': True}).get_json()['data']['use_proxy'] is True
+
+    def test_proxy_setting_keeps_disable_state_stats_and_tokens(self, client, runtime_config):
+        from helper.apiToken import generateToken, verifyApiToken
+        from helper.fetcherConfig import recordFetchResult, getFetcherStats
+        token = generateToken('existing')
+        recordFetchResult('KuaidailiFetcher', False, auto_disable_fails=1)
+        before = getFetcherStats()['KuaidailiFetcher']
+        client.patch('/fetchers/KuaidailiFetcher/', json={'use_proxy': False})
+        assert getFetcherStats()['KuaidailiFetcher'] == before
+        assert verifyApiToken(token['token'])
+        data = client.get('/fetchers/').get_json()['data']['fetchers']
+        item = next(item for item in data if item['class_name'] == 'KuaidailiFetcher')
+        assert item['auto_disabled'] is True and item['use_proxy'] is False
+
+    @pytest.mark.parametrize('value', [None, 0, 1, 'false', [], {}])
+    def test_invalid_proxy_setting_does_not_mutate_config(self, client, runtime_config, value):
+        runtime_config.write_text('{"fetcher_exclude": ["KuaidailiFetcher"]}')
+        before = runtime_config.read_bytes()
+        response = client.patch('/fetchers/KuaidailiFetcher/', json={'enabled': True, 'use_proxy': value})
+        assert response.status_code == 400
+        assert runtime_config.read_bytes() == before
+
+    def test_proxy_setting_requires_authorization(self, client, runtime_config, monkeypatch):
+        monkeypatch.setenv('WEBUI_PASSWORD', 'secret123')
+        assert client.patch('/fetchers/KuaidailiFetcher/', json={'use_proxy': False}).status_code == 401
+
+    def test_proxy_setting_rejects_unknown_source(self, client, runtime_config):
+        assert client.patch('/fetchers/UnknownFetcher/', json={'use_proxy': False}).status_code == 404
+
+    def test_combined_source_and_proxy_configuration(self, client, runtime_config):
+        response = client.patch('/fetchers/KuaidailiFetcher/', json={'enabled': False, 'use_proxy': False})
+        assert response.status_code == 200
+        assert response.get_json()['data']['excluded'] is True
+        assert response.get_json()['data']['use_proxy'] is False
+
 
 class TestWebuiAuth:
     """WebUI 登录鉴权测试(conftest 已将 WEBUI_PASSWORD 置空=默认关闭)"""

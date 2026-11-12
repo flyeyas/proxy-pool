@@ -9,6 +9,7 @@
    Change Activity:
                    2017/7/31:
                    2026/10/29: 修复 get() 重试耗尽时未赋值 self.response; 更新 UA 列表为现代浏览器
+                   2026/11/12: 采集上下文代理选择和带 Cookie 的 session 请求
 -------------------------------------------------
 """
 # pyright: reportAttributeAccessIssue=false
@@ -22,6 +23,7 @@ import random
 import time
 
 from handler.logHandler import LogHandler
+from helper.fetcherProxy import getCurrentFetcherProxyRoute
 
 urllib3.disable_warnings()
 
@@ -29,9 +31,10 @@ urllib3.disable_warnings()
 class WebRequest(object):
     name = "web_request"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, session=None, **kwargs):
         self.log = LogHandler(self.name, file=False)
         self.response = Response()
+        self.session = session
 
     @property
     def user_agent(self):
@@ -75,11 +78,18 @@ class WebRequest(object):
         headers = self.header
         if header and isinstance(header, dict):
             headers.update(header)
+        route = getCurrentFetcherProxyRoute() if 'proxies' not in kwargs else None
         while True:
             try:
-                self.response = requests.get(url, headers=headers, timeout=timeout, *args, **kwargs)
+                request_kwargs = dict(kwargs)
+                if route is not None:
+                    request_kwargs['proxies'] = route.proxiesFor(url)
+                get = self.session.get if self.session is not None else requests.get
+                self.response = get(url, headers=headers, timeout=timeout, *args, **request_kwargs)
                 return self
             except Exception as e:
+                if route is not None:
+                    route.failed(url)
                 self.log.error("requests: %s error: %s" % (url, str(e)))
                 retry_time -= 1
                 if retry_time <= 0:
@@ -103,11 +113,18 @@ class WebRequest(object):
         headers = self.header
         if header and isinstance(header, dict):
             headers.update(header)
+        route = getCurrentFetcherProxyRoute() if 'proxies' not in kwargs else None
         while True:
             try:
-                self.response = requests.post(url, headers=headers, timeout=timeout, *args, **kwargs)
+                request_kwargs = dict(kwargs)
+                if route is not None:
+                    request_kwargs['proxies'] = route.proxiesFor(url)
+                post = self.session.post if self.session is not None else requests.post
+                self.response = post(url, headers=headers, timeout=timeout, *args, **request_kwargs)
                 return self
             except Exception as e:
+                if route is not None:
+                    route.failed(url)
                 self.log.error("requests: %s error: %s" % (url, str(e)))
                 retry_time -= 1
                 if retry_time <= 0:

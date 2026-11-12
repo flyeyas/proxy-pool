@@ -7,9 +7,14 @@ services:
     # 配置统一来自项目根目录 .env(DB_CONN/WEBUI_* 等), 与本地运行共用一份配置
     env_file:
       - .env
+    environment:
+      # 固定到下方数据卷, 与本地运行的默认配置文件分开保存。
+      RUNTIME_CONFIG_FILE: /app/data/runtime_config.json
     volumes:
       # 日志挂载到宿主机项目目录 log/ 下, 直接在宿主机查看/切割文件
       - ./log:/app/log
+      # API Token、代理源开关及统计在重建应用容器后继续保留。
+      - runtime_data:/app/data
     depends_on:
       - proxy_redis
     restart: unless-stopped
@@ -29,3 +34,4 @@ services:
 
 volumes:
   redis_data:
+  runtime_data:

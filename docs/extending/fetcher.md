@@ -71,6 +71,22 @@ class MySourceFetcher(BaseFetcher):
 PROXY_FETCHER_EXCLUDE = ["MySourceFetcher"]
 ```
 
+## 采集请求使用代理
+
+通过调度器或 WebUI 手动采集时，采集线程会根据该源在 WebUI 中的“采集代理”开关，为 `WebRequest().get()` 和 `.post()` 自动选择已验证代理。每个线程独立选择，代理池为空时直连。
+
+需要保存 Cookie 的采集源可创建 `requests.Session()`，再通过 `WebRequest(session=session)` 发起请求，完成后关闭 session。现有小幻源使用此方式。新增采集源应统一使用 `WebRequest`，直接调用 `requests.get()` 不会自动应用采集代理配置。
+
+独立调试 `.fetch()` 时可显式使用同一上下文：
+
+```python
+from helper.fetcherProxy import fetcherProxyContext
+
+with fetcherProxyContext("MySourceFetcher"):
+    for proxy in MySourceFetcher().fetch():
+        print(proxy)
+```
+
 ## BaseFetcher 基类
 
 所有代理源必须继承 `BaseFetcher`，基类提供以下约定和工具：

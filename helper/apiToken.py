@@ -9,6 +9,7 @@
 -------------------------------------------------
    Change Activity:
                    2026/10/25: API Token 生成/验证/删除
+                   2026/11/12: 通过配置事务避免覆盖并发采集设置
 -------------------------------------------------
 """
 __author__ = 'flyeyas'
@@ -16,7 +17,7 @@ __author__ = 'flyeyas'
 import secrets
 from datetime import datetime, timedelta
 
-from helper.runtimeConfig import readConfig, writeConfig
+from helper.runtimeConfig import readConfig, updateConfig
 
 TOKENS_KEY = 'api_tokens'
 
@@ -46,11 +47,11 @@ def generateToken(name='', expire_days=0):
         'created_at': now.strftime(_TIME_FORMAT),
         'expires_at': expires_at,
     }
-    config = readConfig()
-    tokens = config.get(TOKENS_KEY, [])
-    tokens.append(item)
-    config[TOKENS_KEY] = tokens
-    writeConfig(config)
+    def update(config):
+        tokens = config.get(TOKENS_KEY, [])
+        tokens.append(item)
+        config[TOKENS_KEY] = tokens
+    updateConfig(update)
     return item
 
 
@@ -59,12 +60,12 @@ def deleteToken(token):
     删除指定 token
     :return: bool 是否删除了记录
     """
-    config = readConfig()
-    tokens = config.get(TOKENS_KEY, [])
-    remain = [item for item in tokens if item.get('token') != token]
-    config[TOKENS_KEY] = remain
-    writeConfig(config)
-    return len(remain) != len(tokens)
+    def update(config):
+        tokens = config.get(TOKENS_KEY, [])
+        remain = [item for item in tokens if item.get('token') != token]
+        config[TOKENS_KEY] = remain
+        return len(remain) != len(tokens)
+    return updateConfig(update)
 
 
 def renameToken(token, name):
@@ -72,13 +73,13 @@ def renameToken(token, name):
     修改指定 token 的备注名
     :return: dict 更新后的 token 信息; 不存在返回 None
     """
-    config = readConfig()
-    for item in config.get(TOKENS_KEY, []):
-        if item.get('token') == token:
-            item['name'] = name or '未命名'
-            writeConfig(config)
-            return item
-    return None
+    def update(config):
+        for item in config.get(TOKENS_KEY, []):
+            if item.get('token') == token:
+                item['name'] = name or '未命名'
+                return item
+        return None
+    return updateConfig(update)
 
 
 def verifyApiToken(token):
