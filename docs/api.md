@@ -29,6 +29,7 @@
 | `/fetchers` | GET | 返回全部代理源及启用状态 | 无 |
 | `/fetchers/<类名>` | PATCH | 启停指定代理源，body `{"enabled": bool}` | 无 |
 | `/refresh` | POST | 手动触发一次抓取+校验（202 后台执行；重复触发 409） | 无 |
+| `/scheduler` | GET | 调度器在线状态、心跳、任务状态和最近执行记录 | 无，详见 [定时任务状态](webui.md#定时任务状态) |
 | `/logs` | GET | 日志文件列表 / 指定日志尾部内容 | 可选：`?name=fetch&lines=200`（lines 上限 1000） |
 | `/webui/` | GET | WebUI 管理后台页面 | 无，详见 [WebUI 后台](webui.md) |
 

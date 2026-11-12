@@ -83,6 +83,7 @@ Open `http://127.0.0.1:5010/webui/` (build the frontend first; Docker images shi
 - **Dashboard**: total / HTTP / HTTPS / source counts; protocol & source distribution bars; proxy table (protocol filter, keyword search, single delete); 5s auto refresh; "fetch & validate now" button
 - **Fetchers**: all sources with status; **runtime enable/disable toggles** (persisted to `runtime_config.json`, merged with the `setting.py` blacklist, hot reload); consecutive-failure auto-disable with annotated reason
 - **Tokens**: create / rename / delete **API tokens** for external programs, with a validity period (7 / 30 / 90 / 365 days or permanent) and one-click copy
+- **Scheduled tasks**: scheduler heartbeat, fetch/check/log cleanup status, next run, latest result and duration, success/error counts and executions recorded within the last hour; 5s auto refresh
 - **Logs**: tail of `fetch` / `checker` / `scheduler` etc., selectable line count, auto refresh
 
 Set `WEBUI_PASSWORD` in `.env` to enable authentication: all data and management APIs (including `/get` `/all` `/count`) then require authorization — the WebUI uses the login session, external programs use an API token.
@@ -121,6 +122,7 @@ Responses use a unified envelope (`code` always equals the HTTP status):
 | `/fetchers` | GET | Fetcher list with status and stats | none |
 | `/fetchers/<class>` | PATCH | Enable/disable a fetcher, body `{"enabled": bool}` | none |
 | `/refresh` | POST | Trigger one fetch + validate run (202, runs in background) | none |
+| `/scheduler` | GET | Scheduler heartbeat, task status and recent executions | none |
 | `/logs` | GET | Log file list / tail content | optional `?name=fetch&lines=200` |
 | `/webui/` | GET | WebUI admin console | none |
 

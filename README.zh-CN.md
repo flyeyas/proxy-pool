@@ -82,6 +82,7 @@ cd webui && npm install && npm run build
 - **仪表盘**：代理总数 / HTTP / HTTPS / 来源数；协议与来源分布条形图；代理列表（协议筛选、关键字搜索、单条删除）；5 秒自动刷新；「立即抓取并校验」按钮
 - **代理源**：全部代理源状态，支持**后台启停开关**（写入运行时黑名单 `runtime_config.json`，与 `setting.py` 黑名单并集生效，热生效）
 - **Token**：生成/删除 **API Token**（供爬虫等外部程序直连接口），可设置有效期（7 天 / 30 天 / 90 天 / 1 年 / 永久），支持一键复制
+- **定时任务**：调度器心跳、采集/校验/日志清理的运行状态、下次执行时间、最近结果与耗时、成功/失败计数及最近一小时的执行记录；5 秒自动刷新
 - **日志**：查看 `fetch` / `checker` / `scheduler` 等日志尾部内容，行数可选、自动刷新
 
 在 `.env` 中设置 `WEBUI_PASSWORD` 即启用登录验证：所有数据与管理接口（含 `/get` `/all` `/count` 等）均需授权——WebUI 走登录会话，外部程序走 API Token。
@@ -120,6 +121,7 @@ cd webui && npm run dev   # http://localhost:5173，API 自动代理到 127.0.0.
 | `/fetchers` | GET | 代理源列表及状态 | 无 |
 | `/fetchers/<类名>` | PATCH | 启停代理源，body `{"enabled": bool}` | 无 |
 | `/refresh` | POST | 手动触发一次抓取 + 校验（202，后台执行） | 无 |
+| `/scheduler` | GET | 调度器心跳、定时任务状态与最近执行记录 | 无 |
 | `/logs` | GET | 日志文件列表 / 尾部内容 | 可选 `?name=fetch&lines=200` |
 | `/webui/` | GET | WebUI 管理后台 | 无 |
 

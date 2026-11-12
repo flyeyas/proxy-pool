@@ -37,6 +37,7 @@ async function logout() {
       <nav class="nav">
         <RouterLink to="/">仪表盘</RouterLink>
         <RouterLink to="/fetchers">代理源</RouterLink>
+        <RouterLink to="/scheduler">定时任务</RouterLink>
         <RouterLink to="/tokens">Token</RouterLink>
         <RouterLink to="/logs">日志</RouterLink>
         <RouterLink to="/api-docs">API 文档</RouterLink>

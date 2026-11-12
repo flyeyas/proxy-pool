@@ -85,6 +85,91 @@ class TestRefresh:
             webuiApi._releaseRefreshLock(webuiApi._refresh_fd)
 
 
+class TestSchedulerStatus:
+
+    @pytest.fixture(autouse=True)
+    def status_file(self, tmp_path, monkeypatch):
+        path = tmp_path / 'log' / 'scheduler_status.json'
+        monkeypatch.setattr('helper.schedulerStatus.STATUS_FILE', str(path))
+        return path
+
+    @pytest.fixture
+    def live_monitor(self):
+        from unittest.mock import MagicMock
+        from apscheduler.events import EVENT_SCHEDULER_STARTED, SchedulerEvent
+        from helper.schedulerStatus import SchedulerMonitor
+        scheduler = MagicMock(timezone='Asia/Shanghai')
+        scheduler.get_jobs.return_value = []
+        monitor = SchedulerMonitor(scheduler, MagicMock())
+        monitor.start()
+        monitor.runJob('proxy_fetch', lambda: None, source='startup')
+        monitor.onEvent(SchedulerEvent(EVENT_SCHEDULER_STARTED))
+        yield monitor
+        monitor.stop()
+
+    def test_without_scheduler_returns_configured_jobs(self, client, status_file):
+        response = client.get('/scheduler/')
+        assert response.status_code == 200
+        data = response.get_json()['data']
+        assert data['status'] == 'not_started'
+        assert data['online'] is False
+        assert len(data['jobs']) == 3
+        assert response.headers['Cache-Control'] == 'no-store'
+        assert not status_file.exists()
+
+    def test_multiple_clients_read_same_execution_state(self, app, live_monitor):
+        snapshots = [app.test_client().get('/scheduler/').get_json()['data'] for _ in range(4)]
+        assert all(data['online'] and data['status'] == 'running' for data in snapshots)
+        assert all(data['jobs'][0]['success_count'] == 1 for data in snapshots)
+        assert len({data['history'][0]['id'] for data in snapshots}) == 1
+
+    def test_status_requires_auth_and_accepts_session_and_token(self, client, live_monitor,
+                                                               monkeypatch, tmp_path):
+        from helper.apiToken import generateToken
+        monkeypatch.setenv('WEBUI_USERNAME', 'admin')
+        monkeypatch.setenv('WEBUI_PASSWORD', 'secret123')
+        monkeypatch.setattr('helper.runtimeConfig.CONFIG_FILE', str(tmp_path / 'runtime.json'))
+        assert client.get('/scheduler/').status_code == 401
+        assert client.get('/scheduler/', headers={'Authorization': 'Bearer invalid'}).status_code == 401
+        assert client.post('/auth/login/', json={
+            'username': 'admin', 'password': 'secret123'}).status_code == 200
+        assert client.get('/scheduler/').status_code == 200
+        client.post('/auth/logout/')
+        token = generateToken('scheduler test')['token']
+        response = client.get('/scheduler/', headers={'Authorization': 'Bearer ' + token})
+        assert response.status_code == 200
+        assert response.get_json()['data']['online'] is True
+
+    def test_stale_state_is_reported_offline(self, client, live_monitor, monkeypatch):
+        import helper.schedulerStatus as status_mod
+        now = status_mod._now()
+        monkeypatch.setattr(status_mod, '_now', lambda: now + status_mod.STALE_AFTER + 1)
+        data = client.get('/scheduler/').get_json()['data']
+        assert data['status'] == 'offline'
+        assert data['online'] is False
+        assert all(job['status'] == 'unknown' for job in data['jobs'])
+
+    def test_history_expires_after_one_hour_even_when_stopped(self, client, live_monitor,
+                                                            monkeypatch):
+        import helper.schedulerStatus as status_mod
+        live_monitor.stop()
+        now = status_mod._now() + status_mod.HISTORY_RETENTION_SECONDS + 1
+        monkeypatch.setattr(status_mod, '_now', lambda: now)
+        data = client.get('/scheduler/').get_json()['data']
+        assert data['status'] == 'stopped'
+        assert data['history'] == []
+        assert data['jobs'][0]['success_count'] == 1
+        assert data['history_retention_seconds'] == 3600
+
+    def test_corrupted_snapshot_returns_unavailable(self, client, status_file):
+        status_file.parent.mkdir()
+        status_file.write_text('{', encoding='utf-8')
+        response = client.get('/scheduler/')
+        assert response.status_code == 200
+        assert response.get_json()['data']['status'] == 'unavailable'
+        assert response.get_json()['data']['online'] is False
+
+
 class TestLogs:
 
     def test_logs_list(self, client, tmp_path, monkeypatch):

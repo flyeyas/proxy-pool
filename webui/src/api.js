@@ -68,6 +68,7 @@ export const api = {
     request(`/delete/?proxy=${encodeURIComponent(proxy)}`, { method: 'DELETE' }),
   refresh: () => request('/refresh/', { method: 'POST' }),
   fetchers: () => request('/fetchers/'),
+  schedulerStatus: () => request('/scheduler/'),
   fetcherToggle: (className, enabled) =>
     request(`/fetchers/${encodeURIComponent(className)}/`, {
       method: 'PATCH',

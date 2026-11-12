@@ -9,6 +9,7 @@
    Change Activity:
                    2026/10/24: WebUI后台接口
                    2026/10/25: 新增账号登录(WEBUI_USERNAME/WEBUI_PASSWORD)
+                   2026/11/12: 新增定时任务状态查询
 -------------------------------------------------
 """
 __author__ = 'flyeyas'
@@ -36,6 +37,7 @@ from helper.fetcherConfig import (getRuntimeExclude, toggleRuntimeExclude,
                                   getAutoDisable, getFetcherStats, enableFetcher)
 from helper.apiToken import (listTokens, generateToken, deleteToken,
                              verifyApiToken, renameToken)
+from helper.schedulerStatus import getSchedulerStatus
 from api.response import apiOk, apiError
 
 webui_bp = Blueprint('webui', __name__)
@@ -98,7 +100,7 @@ def _releaseRefreshLock(handle):
 
 # 需要授权才能访问的接口(前缀匹配): 代理数据接口 + 管理接口 + token 管理
 _PROTECTED_PREFIXES = ('/get', '/pop', '/all', '/count',
-                       '/fetchers', '/logs', '/delete', '/auth/tokens')
+                       '/fetchers', '/logs', '/scheduler', '/delete', '/auth/tokens')
 _SESSION_KEY = 'webui_login'
 
 
@@ -319,6 +321,13 @@ def refresh():
         return apiError(409, "a refresh task is already running")
     Thread(target=_runFetchAndCheck, args=(lock_handle,), daemon=True).start()
     return apiOk(message="fetch and check started", status=202)
+
+
+@webui_bp.route('/scheduler/')
+def schedulerStatus():
+    """调度器在线状态、任务执行情况与最近执行记录。"""
+    data, status = apiOk(getSchedulerStatus())
+    return data, status, {'Cache-Control': 'no-store'}
 
 
 @webui_bp.route('/logs/')

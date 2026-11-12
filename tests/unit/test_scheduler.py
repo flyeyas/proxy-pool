@@ -19,6 +19,7 @@ from unittest.mock import patch, MagicMock
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 import helper.scheduler as scheduler_mod
+from helper.schedulerStatus import SchedulerMonitor
 
 
 @pytest.fixture(autouse=True)
@@ -26,6 +27,16 @@ def mock_log_cleanup(monkeypatch):
     cleanup = MagicMock()
     monkeypatch.setattr(scheduler_mod, "cleanupExpiredLogs", cleanup)
     return cleanup
+
+
+@pytest.fixture(autouse=True)
+def mock_status_monitor(monkeypatch):
+    monitor = MagicMock()
+    monitor.events = SchedulerMonitor.events
+    monitor.wrap.side_effect = lambda job_id, function: function
+    monitor.runJob.side_effect = lambda job_id, function, **kwargs: function()
+    monkeypatch.setattr(scheduler_mod, 'SchedulerMonitor', lambda *args: monitor)
+    return monitor
 
 
 def _get_attr(name):
