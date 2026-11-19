@@ -8,18 +8,55 @@ from .normalize import normalize_candidate
 from .repository import encode
 
 
-def import_legacy(repo, policy):
-    imported, rejected = 0, 0
+def _import_legacy(repo, policy):
+    imported, rejected, capacity_rejected = 0, 0, 0
+    legacy_ids = set()
     for address, value in repo.redis.hscan_iter(repo.table, count=200):
         try:
             old = json.loads(value)
             candidate = normalize_candidate({'proxy': address, 'country': old.get('region', ''),
                                              'source': old.get('source', '')}, identity_key=identity_key() if '@' in address else None)
-            repo.submit(candidate, policy)
-            imported += 1
-        except (ValueError, TypeError):
+            legacy_ids.add(candidate.endpoint_id)
+            if repo.submit(candidate, policy):
+                imported += 1
+            else:
+                capacity_rejected += 1
+        except (ValueError, TypeError, AttributeError):
             rejected += 1
-    return {'imported': imported, 'rejected': rejected}
+    return {'imported': imported, 'rejected': rejected,
+            'capacity_rejected': capacity_rejected}, legacy_ids
+
+
+def import_legacy(repo, policy):
+    report, _ = _import_legacy(repo, policy)
+    return report
+
+
+def _activation_coverage(repo, policy, minimum):
+    report, legacy_ids = _import_legacy(repo, policy)
+    if report['capacity_rejected']:
+        raise ValueError('activation coverage incomplete: legacy import exceeds candidate capacity')
+    pending = completed = available = legacy_completed = 0
+    cursor = 0
+    while True:
+        endpoints, cursor, _ = repo.page(cursor, 200)
+        for endpoint in endpoints:
+            tested = any(r.get('policy_version') == policy.version and r.get('code') not in
+                         ('deferred', 'environment_error', 'unsupported')
+                         for variant in endpoint.variants.values() for r in variant.get('targets', {}).values())
+            completed += int(tested)
+            pending += int(not tested)
+            legacy_completed += int(tested and endpoint.endpoint_id in legacy_ids)
+            _, projection = repo.legacy_projection(endpoint, policy, time.time())
+            available += bool(projection)
+        if cursor is None:
+            break
+    legacy_total = len(legacy_ids) + report['rejected']
+    if (completed == 0 or completed / (completed + pending) < 0.95 or available < minimum
+            or (legacy_total and legacy_completed / legacy_total < 0.95)):
+        raise ValueError('activation coverage or compatible availability gate not met')
+    return {'completed': completed, 'pending': pending, 'legacy_completed': legacy_completed,
+            'legacy_total': legacy_total, 'compatible_available': available}
 
 
 def activate(repo, policy, minimum=20, wait_seconds=120):
@@ -41,26 +78,9 @@ def activate(repo, policy, minimum=20, wait_seconds=120):
             raise ValueError('activation requires shadow mode')
         if original['policy_version'] != policy.version:
             raise ValueError('wait for the desired policy to become effective')
-        # Coverage must include the actual legacy pool, even when an operator did not
-        # explicitly submit the import job before requesting activation.
-        import_legacy(repo, policy)
-        pending = completed = available = 0
-        cursor = 0
-        while True:
-            endpoints, cursor, _ = repo.page(cursor, 200)
-            for endpoint in endpoints:
-                if any(r.get('policy_version') == policy.version and r.get('code') not in
-                       ('deferred', 'environment_error', 'unsupported')
-                       for variant in endpoint.variants.values() for r in variant.get('targets', {}).values()):
-                    completed += 1
-                else:
-                    pending += 1
-                _, projection = repo.legacy_projection(endpoint, policy, time.time())
-                available += bool(projection)
-            if cursor is None:
-                break
-        if completed == 0 or completed / (completed + pending) < 0.95 or available < minimum:
-            raise ValueError('activation coverage or compatible availability gate not met')
+        # Legacy coverage has its own denominator; unrelated V2 successes cannot
+        # hide unchecked legacy records or an import blocked by a full queue.
+        _activation_coverage(repo, policy, minimum)
         draining = {**original, 'draining': True, 'epoch': uuid4().hex}
         if not repo.update_control(original, draining):
             raise ValueError('control changed; retry activation')
@@ -73,6 +93,9 @@ def activate(repo, policy, minimum=20, wait_seconds=120):
             if time.monotonic() >= deadline:
                 raise ValueError('legacy writers did not drain')
             time.sleep(0.1)
+        # A legacy writer may have added records while the initial gate ran.
+        # Re-import and recheck against the now-frozen legacy pool before copying.
+        coverage = _activation_coverage(repo, policy, minimum)
         legacy_existed = bool(repo.redis.exists(repo.table))
         if legacy_existed:
             repo.redis.copy(repo.table, backup)
@@ -107,7 +130,8 @@ def activate(repo, policy, minimum=20, wait_seconds=120):
         committed = True
         save_desired({'mode': 'active'})
         repo.reschedule_all()
-        return {'mode': 'active', 'compatible_available': count, 'rollback_hash': active['rollback_hash']}
+        return {**coverage, 'mode': 'active', 'compatible_available': count,
+                'rollback_hash': active['rollback_hash']}
     finally:
         if not committed:
             current = repo.control()

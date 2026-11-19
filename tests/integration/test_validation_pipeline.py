@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+from dataclasses import replace
 from urllib.parse import quote
 import pytest
 
@@ -151,6 +152,70 @@ def test_activation_does_not_count_unchecked_legacy_pool_as_covered(store, tmp_p
     with pytest.raises(ValueError, match='coverage'):
         activate(repo, policy, minimum=1)
     assert repo.control()['mode'] == 'shadow'
+
+
+def test_unrelated_v2_successes_cannot_dilute_legacy_coverage(store, tmp_path, monkeypatch):
+    repo, policy, control, owner = store
+    monkeypatch.setattr('helper.runtimeConfig.CONFIG_FILE', str(tmp_path / 'runtime.json'))
+    save_desired({'mode': 'shadow'})
+    for index in range(21):
+        _, task = enqueue(store, '192.0.2.%d:80' % (index + 1))
+        assert repo.commit(task, [result(policy)], policy, owner)
+    repo.redis.hset(repo.table, '9.9.9.9:80', json.dumps({'proxy': '9.9.9.9:80'}))
+    with pytest.raises(ValueError, match='coverage'):
+        activate(repo, policy, minimum=1)
+    assert repo.control()['mode'] == 'shadow'
+    assert repo.redis.hlen(repo.table) == 1
+
+
+def test_full_candidate_queue_cannot_hide_unimported_legacy_records(store, tmp_path, monkeypatch):
+    from helper.validation.migration import import_legacy
+    repo, policy, control, owner = store
+    monkeypatch.setattr('helper.runtimeConfig.CONFIG_FILE', str(tmp_path / 'runtime.json'))
+    limited = replace(policy, max_candidates=1)
+    save_desired({'mode': 'shadow', 'policy': limited.to_dict()})
+    _, task = enqueue(store)
+    assert repo.commit(task, [result(policy)], policy, owner)
+    repo.redis.hset(repo.table, '9.9.9.9:80', json.dumps({'proxy': '9.9.9.9:80'}))
+    assert import_legacy(repo, limited) == {'imported': 0, 'rejected': 0, 'capacity_rejected': 1}
+    with pytest.raises(ValueError, match='capacity'):
+        activate(repo, limited, minimum=1)
+    assert repo.control()['mode'] == 'shadow'
+    assert repo.redis.hlen(repo.table) == 1
+
+
+def test_invalid_legacy_records_count_as_uncovered(store, tmp_path, monkeypatch):
+    repo, policy, control, owner = store
+    monkeypatch.setattr('helper.runtimeConfig.CONFIG_FILE', str(tmp_path / 'runtime.json'))
+    save_desired({'mode': 'shadow'})
+    candidate, task = enqueue(store)
+    assert repo.commit(task, [result(policy)], policy, owner)
+    repo.redis.hset(repo.table, mapping={candidate.address: json.dumps({'proxy': candidate.address}),
+                                       '9.9.9.9:80': '{broken-json'})
+    with pytest.raises(ValueError, match='coverage'):
+        activate(repo, policy, minimum=1)
+    assert repo.control()['mode'] == 'shadow'
+
+
+def test_legacy_arrivals_during_drain_must_pass_the_final_gate(store, tmp_path, monkeypatch):
+    from helper.validation import migration
+    repo, policy, control, owner = store
+    monkeypatch.setattr('helper.runtimeConfig.CONFIG_FILE', str(tmp_path / 'runtime.json'))
+    save_desired({'mode': 'shadow'})
+    candidate, task = enqueue(store)
+    assert repo.commit(task, [result(policy)], policy, owner)
+    repo.redis.hset(repo.table, candidate.address, json.dumps({'proxy': candidate.address}))
+    writers = repo.prefix + 'legacy_writers'
+    repo.redis.zadd(writers, {'last-legacy-writer': time.time() + 60})
+    def finish_writer(_):
+        repo.redis.hset(repo.table, '9.9.9.9:80', json.dumps({'proxy': '9.9.9.9:80'}))
+        repo.redis.zrem(writers, 'last-legacy-writer')
+    monkeypatch.setattr(migration.time, 'sleep', finish_writer)
+    with pytest.raises(ValueError, match='coverage'):
+        activate(repo, policy, minimum=1)
+    assert repo.control()['mode'] == 'shadow' and not repo.control().get('draining')
+    assert repo.redis.hlen(repo.table) == 2
+    assert not list(repo.redis.scan_iter(repo.table + ':rollback:*'))
 
 
 def test_rollback_restores_originally_empty_pool(store, tmp_path, monkeypatch):
