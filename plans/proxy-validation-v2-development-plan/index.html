@@ -1,0 +1,1481 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python爬虫代理IP池">
+      
+      
+        <meta name="author" content="jhao104">
+      
+      
+        <link rel="canonical" href="https://jhao104.github.io/proxy_pool/plans/proxy-validation-v2-development-plan/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>代理检测 V2：开发计划与验收清单 - ProxyPool</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Noto Sans SC";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#v2" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="ProxyPool" class="md-header__button md-logo" aria-label="ProxyPool" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ProxyPool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              代理检测 V2：开发计划与验收清单
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="light-blue"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="light-blue"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jhao104/proxy_pool" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jhao104/proxy_pool
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  首页
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/" class="md-tabs__link">
+          
+  
+  
+  用户指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../extending/fetcher/" class="md-tabs__link">
+          
+  
+  
+  开发指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  变更日志
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ProxyPool" class="md-nav__button md-logo" aria-label="ProxyPool" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    ProxyPool
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jhao104/proxy_pool" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jhao104/proxy_pool
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目结构
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../validation-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    代理检测 V2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebUI 后台
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker 部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extending/fetcher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    扩展代理源
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extending/validator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    扩展校验器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 执行原则与工期口径
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-p005" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. P0：冻结基线和实现契约（0.5 日）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-p11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. P1：数据模型、地址标准化和采集兼容（1 日）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-p2-worker2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. P2：真实协议传输与可回收 worker（2 日）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-p31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. P3：地区、目标判定与日志（1 日）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-p42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. P4：队列、原子状态和目标保护（2 日）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-p5api-webui15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. P5：API、抓取路由和 WebUI（1.5 日）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-p6-docker-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. P6：本地 Docker 全链路验收（1.5 日）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-p7github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. P7：GitHub 发布与服务器切换
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 强制验收矩阵
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. 交付证据目录与阶段完成标准
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 回滚操作次序
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        13. 本轮交付状态
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="v2">代理检测 V2：开发计划与验收清单<a class="headerlink" href="#v2" title="Permanent link">&para;</a></h1>
+<p>编制日期：2026-11-19（Asia/Shanghai）。</p>
+<p>状态：开发已启动；P0—P5 已有实现与分阶段测试，P6 验收进行中，P7 尚未执行。实测证据见 <a href="../../reports/validation-v2-progress/">开发记录</a>。</p>
+<p>设计依据：<a href="../proxy-validation-v2-design/">详细开发方案</a>。</p>
+<p>代码基线：v1.5.1 / 6793a3cf9c544c345bcee996196d47a7a8028051。</p>
+<h2 id="1">1. 执行原则与工期口径<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<p>按一个主要开发者串行推进估算，不假定额外人员或并行 agent。基准约 10 个有效工作日，另留 2—3 日用于协议兼容、资源调优、公网观察和返工；这是工作量估算，不是从今天起自动执行的排期或固定上线承诺。每阶段通过验收门槛后才进入下一阶段。</p>
+<p>实施按阶段提交，未通过本地 Docker 验收不进入发布；服务器只使用 GitHub Actions 构建的镜像。不得跳过真实隧道、超时回收、鉴权、原子存储和回滚验证；未勾选事项按其完整验收条件继续验证，不因已有代码就视为完成。</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>工作量</th>
+<th>前置</th>
+<th>阶段交付</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0：基线与契约冻结</td>
+<td>0.5 日</td>
+<td>本方案</td>
+<td>测试基线、字段/状态/API/配置契约、灰度路径</td>
+</tr>
+<tr>
+<td>P1：数据模型与候选</td>
+<td>1 日</td>
+<td>P0</td>
+<td>规范化、多协议元数据、兼容来源</td>
+</tr>
+<tr>
+<td>P2：传输与 worker</td>
+<td>2 日</td>
+<td>P1</td>
+<td>6 类 variant、真实 TLS/认证、硬超时、受控代理夹具</td>
+</tr>
+<tr>
+<td>P3：地区与结果策略</td>
+<td>1 日</td>
+<td>P2</td>
+<td>地区策略、内容/状态分类、结构化事件</td>
+</tr>
+<tr>
+<td>P4：持久队列与状态</td>
+<td>2 日</td>
+<td>P3</td>
+<td>Redis 原子队列、限流、租约、淘汰、熔断</td>
+</tr>
+<tr>
+<td>P5：API、采集路由与 WebUI</td>
+<td>1.5 日</td>
+<td>P4</td>
+<td>兼容和 V2 接口、鉴权、筛选和可观测性</td>
+</tr>
+<tr>
+<td>P6：全链路与 Docker</td>
+<td>1.5 日</td>
+<td>P5</td>
+<td>集成/资源/迁移/回滚报告、本地镜像验证</td>
+</tr>
+<tr>
+<td>P7：发布与服务器验证</td>
+<td>0.5 日主动工作 + 观察窗口</td>
+<td>P6 通过、进入实施发布阶段</td>
+<td>Release、GHCR digest、影子报告、切换/回滚记录</td>
+</tr>
+<tr>
+<td>合计</td>
+<td>10 日 + 2—3 日缓冲</td>
+<td>—</td>
+<td>完整可验收版本</td>
+</tr>
+</tbody>
+</table>
+<p>P0—P4 为检测后端里程碑 M1；P5—P6 为可交付里程碑 M2；P7 为上线里程碑 M3。只完成 M1 不能宣称完成整次升级。</p>
+<h2 id="2-p005">2. P0：冻结基线和实现契约（0.5 日）<a class="headerlink" href="#2-p005" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P0.1 重新确认分支、HEAD、未提交修改、版本与实际配置来源；运行当前测试，记录真实用例数量、失败、警告和环境，不能复用历史“446 通过”替代本次结果。</li>
+<li>[x] P0.2 冻结 endpoint/variant/profile、unknown 地区、失败分类、连续失败计数与默认分发语义；补充对象字段的可空、时间单位、枚举和派生规则。</li>
+<li>[x] P0.3 冻结旧接口兼容范围及 V2 参数、认证范围、分页和错误结构；列出现有扩展 validator 的兼容行为。</li>
+<li>[x] P0.4 固定使用“独立灰度入口 + 全局原子切换”，不设计线上两个引擎同时写同一 Hash；明确 Redis 为运行中 mode_epoch 的权威来源。</li>
+<li>[x] P0.5 记录 CPU、可用内存、容器限制及已有服务的资源基线；服务器检查仅在进入实施后使用已授权连接，不在方案阶段启动测试。</li>
+</ul>
+<p>交付：版本化契约说明、基线测试报告、资源预算表、风险列表。门槛：地区/协议语义不混淆，所有新接口都有鉴权要求，部署切换无双 writer 窗口。</p>
+<h2 id="3-p11">3. P1：数据模型、地址标准化和采集兼容（1 日）<a class="headerlink" href="#3-p11" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P1.1 实现 ProxyCandidate、ProxyEndpointV2、VariantResult、TargetResult、ValidationPolicy；结果中保存 schema/policy 版本和 generation，未经检测为 unknown/pending。</li>
+<li>[x] P1.2 实现 IPv4、方括号 IPv6、域名、端口、认证 URL 的标准化；明确 SOCKS4 IPv4 限制；敏感凭证只用引用进入任务和标识。</li>
+<li>[x] P1.3 支持旧抓取器字符串与新结构化候选并存，跨批次合并来源和声明信息；历史 JSON 能读取，缺字段不崩溃，也不伪造 V2 成功。</li>
+<li>[x] P1.4 Geonode 接入国家和原始协议提示，保留 SOCKS4/5；https 提示不直接等同 TLS 代理；其他采集源先经兼容适配器保持行为，再按需要补充元数据。</li>
+<li>[x] P1.5 新增有限协议发现计划：有提示先验证，未知协议按配置逐步尝试；超预算未测项保持 pending。</li>
+</ul>
+<p>修改范围：helper/proxy.py、helper/fetch.py、fetcher/baseFetcher.py、Geonode 来源、新增 helper/validation 的模型和规范化模块。</p>
+<p>交付：地址与序列化单测、来源合并测试、混合协议源测试。门槛：相同地址不同认证不覆盖；同一 endpoint 多协议不丢失；旧来源无须全部重写即可继续运行。</p>
+<h2 id="4-p2-worker2">4. P2：真实协议传输与可回收 worker（2 日）<a class="headerlink" href="#4-p2-worker2" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P2.1 先做最小技术验证：现有 Requests 约束下的显式 urllib3/PySocks 版本组合；在 Python 3.13 镜像中验证 TLS-in-TLS、认证、SOCKS 和受控证书。验证不通过先调整传输封装，不靠关闭 TLS 检查通过。</li>
+<li>[x] P2.2 实现 6 类 variant 的独立连接、精确代理 URL 和两层 CA 配置；采集路由共用 URL 描述，避免硬编码 http 或 https。</li>
+<li>[x] P2.3 实现 GET 流式请求、手动白名单跳转、正文边界、响应关闭；禁止环境代理、系统 no_proxy、采集上下文代理和失败直连回退。</li>
+<li>[x] P2.4 实现 spawn worker 生命周期、独立 Pipe、任务 heartbeat/状态事件；协调器统一落日志和写状态，worker 不写数据库。</li>
+<li>[x] P2.5 实现剩余预算传递、暂态重试、整轮 30 秒截止与 2 秒回收；验证 DNS 阻塞、TLS 卡住、慢速持续回包和正文读取未完成均能回收。</li>
+<li>[x] P2.6 实现受控 HTTP CONNECT、TLS 代理、SOCKS4/4a/5/5h、HTTPS 目标和测试 CA；夹具记录连接路径与域名解析发生处，测试网不依赖公网代理。</li>
+</ul>
+<p>交付：传输适配器、可运行测试夹具、逐协议实际链路报告、超时回收报告、依赖冻结结果。门槛：协议支持必须实际建立相应连接；强制错误 scheme 要失败；环境代理开启也不能掩盖坏候选；不存在持续增长的残留进程/FD。</p>
+<p>不接受以线程等待超时冒充网络调用已停止，也不接受只 mock head/get 为 200 就宣称协议集成完成。</p>
+<h2 id="5-p31">5. P3：地区、目标判定与日志（1 日）<a class="headerlink" href="#5-p31" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P3.1 实现地区证据优先级、成功/失败缓存、独立查询预算；支持 CN、非 CN、unknown 和可配置映射；保留主机与出口地区差异。</li>
+<li>[x] P3.2 实现 QQ/Google profile 与结果分类：200 内容合格、受控重定向、403/429、验证码/同意页、TLS 错误、认证错误、证据不足。</li>
+<li>[x] P3.3 实现 HTTP-only 可选检测；主准入不再依赖明文 HTTP 成功。明确海外仅 QQ 可达不得当作 overseas 合格。</li>
+<li>[x] P3.4 实现事件 schema、批次汇总和递归异常脱敏；来源计数、endpoint、variant、attempt、最终结果分别统计。</li>
+<li>[x] P3.5 固定现代但稳定的检测请求头，避免每次随机 UA 引入噪声；内容样本脱敏并版本化，仅保存必要测试片段。</li>
+</ul>
+<p>交付：分类单测、地区冲突用例、日志样本和批次统计对账。门槛：未知地区不误写 CN；非主目标成功不替代主目标；日志可说明“在哪个阶段、访问哪个目标、为什么没通过”。</p>
+<h2 id="6-p42">6. P4：队列、原子状态和目标保护（2 日）<a class="headerlink" href="#6-p42" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P4.1 新增独立 Redis V2 Repository，明确 key 前缀、序列化、过期与索引；禁止借用 DbClient 单例的 changeTable 在并发操作时切换命名空间。</li>
+<li>[x] P4.2 实现 due 队列、有限候选读取、endpoint 去重、leader/endpoint 租约、owner 校验、generation/fence；真实 Redis 上验证原子领取和提交。</li>
+<li>[x] P4.3 定时与手动入口统一生产任务；实现全局 2 请求/秒/目标、burst=1、重试/跳转/健康探测同额度，排队等待和请求耗时分开计量。</li>
+<li>[x] P4.4 实现连续 3 个独立硬失败轮次、成功清零、首败暂停、10 分钟新鲜度、隔离和 TTL 清理；未测项目/基础设施错误不进入失败计数。</li>
+<li>[x] P4.5 实现目标健康窗口、参考代理、open/half_open/unknown、canary 和分批恢复；区分代理端硬错误与共同目标/环境错误。</li>
+<li>[x] P4.6 实现原子 pop/delete 与在途任务作废；删除后旧结果不能复活，重复领取/重启不能重复提交。</li>
+<li>[x] P4.7 实现幂等迁移、legacy/shadow/active 模式、待发布策略与生效策略、兼容投影、过期清理和模式切换脚本；失败保持旧服务。</li>
+</ul>
+<p>交付：真实 Redis 8 并发/故障测试、状态转换表、恢复与迁移记录。门槛：两个入口同时触发不突破全局上限；429 不等于连接死亡；目标共同异常不批量删库；操作可中断并恢复。</p>
+<h2 id="7-p5api-webui15">7. P5：API、抓取路由和 WebUI（1.5 日）<a class="headerlink" href="#7-p5api-webui15" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P5.1 完成旧 API 字段、外层响应与参数兼容；active 下只返回新鲜合格的 HTTP 连接结果，type=https 不误代表连接协议。</li>
+<li>[x] P5.2 实现 V2 列表/随机获取/pop/delete/提交检测/状态/配置接口；分页、参数非法值、服务不可用都有明确响应；获取连接返回正确 scheme 和 DNS 模式。</li>
+<li>[x] P5.3 将所有 V2 路径纳入鉴权；配置和模式写操作仅管理员会话，普通 API Token 不能修改；补充未登录、过期 Token、合法 Token 和管理员四组测试。</li>
+<li>[x] P5.4 fetcherProxy 路由按支持能力和完整连接 URL 选代理，能使用 SOCKS/TLS 代理；检测流程始终禁止直连回退，普通采集原有回退策略另行保持并明确展示。</li>
+<li>[x] P5.5 WebUI 新增地区、协议、profile、状态和耗时筛选、详情、目标健康、队列延迟、影子对比；保留现有样式和 Token/采集源页面。</li>
+<li>[x] P5.6 新增 validation 配置区和生效版本显示；修改只更新该命名空间，环境锁定项只读，接口写入必须校验枚举/边界。</li>
+<li>[x] P5.7 同步 API/配置/扩展校验器文档。旧自定义 validator 在 legacy 保持原样；V2 自定义检查显式注册并说明 hook 责任，不能静默不执行，也不能自动继承依赖旧 HTTP_URL 的旧规则。</li>
+</ul>
+<p>交付：接口契约测试、抓取路由集成测试、前端生产构建和关键页面人工验证。门槛：旧调用方不会拿到 SOCKS 并错误拼接 http；新接口不会绕过登录；刷新只入队、不复制一套检测线程。</p>
+<h2 id="8-p6-docker-15">8. P6：本地 Docker 全链路验收（1.5 日）<a class="headerlink" href="#8-p6-docker-15" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P6.1 跑全套单元与 API 测试，运行 Python 3.10—3.13 矩阵；本地 Python 操作先激活 xiangmu；关键新增状态/原子分支建议达到 90% 分支覆盖，并人工核对异常路径。</li>
+<li>[x] P6.2 本地从源码构建 Node 26 + Python 3.13 应用镜像，使用 Redis 8；基础镜像、依赖和架构记录实际版本与 digest，允许沿用已验证加速源。</li>
+<li>[x] P6.3 使用隔离 Compose 项目、独立端口、Redis 数据卷、runtime 配置及日志，完成真实多协议抓取→规范化→检测→Redis→API→采集回用；不覆盖已有本地测试数据。</li>
+<li>[x] P6.4 做跨进程去重/租约/限流、Redis 短暂不可用、协调器重启、慢代理资源回收、队列积压和目标异常演练。</li>
+<li>[x] P6.5 受控场景验证 1/4/8/20 worker；500 endpoint 的快响应、连接失败、慢流三组压力测试；确定默认部署 worker 数和容量，资源不足就降低，不把上限当目标。</li>
+<li>[x] P6.6 用固定种子数据进行迁移两次、删除与迟到提交、切 active、回滚旧镜像和配置；核对 Token、源开关、其他运行时字段和 Redis 数据卷。</li>
+<li>[x] P6.7 限量真实 QQ/Google 与 Geonode 测试，逐项区分抓取成功和代理通过；记录本机网络和代理环境，不把本地可达性当云端结果。</li>
+<li>[x] P6.8 完成发布说明、默认参数、兼容变化、故障处理和回滚步骤；保留测试证据、镜像标识和已知限制。</li>
+</ul>
+<p>交付：本地验收报告、受测提交/镜像、资源与公网对照结果、可执行的迁移回滚操作手册。门槛：下文强制验收用例全部通过；仅网络波动的公网检查单列，不伪造成单元测试通过。</p>
+<p>资源验收建议：相同受控负载连续运行 60 分钟，worker/FD 数量稳定；去掉预热后的后半程 RSS 不持续单调增长；应用与 worker 峰值合计低于实际容器内存限额 70%，否则调低 worker_count 并复测。不可承诺未经测试的绝对 MB 数。</p>
+<h2 id="9-p7github">9. P7：GitHub 发布与服务器切换<a class="headerlink" href="#9-p7github" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] P7.1 确认所有验收证据对应同一提交；更新建议版本 v1.6.0 和变更日志，检查无 .env/Token/凭证/测试卷进入提交。</li>
+<li>[ ] P7.2 推送 GitHub，分支 CI 全部通过；补足 tag 的测试门禁，再创建版本标签与 GitHub Release。tag 若已存在，不能强制移动覆盖已发布版本。</li>
+<li>[ ] P7.3 等待 tag 对应的 GitHub Actions amd64/arm64 构建完成，核对 OCI revision、标签、架构与镜像 digest；发布记录引用固定 digest。</li>
+<li>[ ] P7.4 使用受保护部署配置中的已授权 SSH 目标和端口，检查实际部署目录、Compose 项目、数据卷和生效配置；备份 Redis、旧 Hash、配置及旧镜像 digest。真实连接信息不写入公开仓库，路径和运行状态须重新确认。</li>
+<li>[ ] P7.5 只更新应用镜像到 GitHub digest，先运行 shadow；Redis 8 和数据卷不重建，先验证登录、Token、WebUI、调度心跳和 legacy API。</li>
+<li>[ ] P7.6 独立灰度入口先覆盖 10% endpoint、最多 50 个，至少观察 30 分钟；再扩大到 50% 和全量 shadow，比较分类和资源。覆盖率、可用量及故障解释达到门槛才允许切 active。</li>
+<li>[ ] P7.7 暂停旧检测 writer 并排空在途任务；冻结回滚备份，准备受限 HTTP 投影；通过原子 mode_epoch 和投影切换完成全局 active，逐批复检剩余 pending。线上 Hash 不双写。</li>
+<li>[ ] P7.8 切换后至少观察 30 分钟，记录新旧可用数变化、Google/QQ 失败类型、worker/RSS/FD、队列延迟、429、目标状态、接口鉴权和容器重启次数；发布最终部署记录。</li>
+</ul>
+<p>灰度流量比例指测试入口/影子候选覆盖，不让线上一部分 endpoint 被旧引擎、另一部分被新引擎无约束同时写入同一 Hash。全局切换点只有一个，必须可审计。</p>
+<p>停止扩大灰度的条件：连续出现真实路由错误/凭证泄露；环境代理导致假成功；目标故障触发批量删除；原子 pop 重复返回；已删除代理被旧任务复活；资源超过预算；配置丢失；无法解释的可用数明显下降。安全性/一致性缺陷立即停止并回滚，普通目标受限先隔离诊断。</p>
+<h2 id="10">10. 强制验收矩阵<a class="headerlink" href="#10" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>场景</th>
+<th>必须观察到的结果</th>
+<th>类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A01</td>
+<td>普通 HTTP 代理访问 HTTPS</td>
+<td>真实 CONNECT 和目标 TLS；记录 http + supports_https</td>
+<td>协议集成</td>
+</tr>
+<tr>
+<td>A02</td>
+<td>TLS 代理访问 HTTPS</td>
+<td>代理、目标两层 TLS；分别验证证书</td>
+<td>协议集成</td>
+</tr>
+<tr>
+<td>A03</td>
+<td>SOCKS4/4a</td>
+<td>正确协商；IPv4 限制与远端域名解析符合所选 variant</td>
+<td>协议集成</td>
+</tr>
+<tr>
+<td>A04</td>
+<td>SOCKS5/5h</td>
+<td>IPv4/IPv6、用户名密码及本地/远端 DNS 可区分</td>
+<td>协议集成</td>
+</tr>
+<tr>
+<td>A05</td>
+<td>将 HTTP 代理错误当 TLS 代理</td>
+<td>明确协议错误，不产生成功记录</td>
+<td>负向集成</td>
+</tr>
+<tr>
+<td>A06</td>
+<td>HTTP 阶段失败但 CONNECT HTTPS 成功</td>
+<td>允许对应主目标通过，不受旧前置条件阻挡</td>
+<td>回归</td>
+</tr>
+<tr>
+<td>A07</td>
+<td>同一 endpoint 支持多个协议</td>
+<td>各协议结果独立；一次失败不覆盖其他成功</td>
+<td>状态</td>
+</tr>
+<tr>
+<td>A08</td>
+<td>CN、非 CN、HK/MO/TW、unknown</td>
+<td>按 profile 选目标，原始地区码不改写</td>
+<td>策略</td>
+</tr>
+<tr>
+<td>A09</td>
+<td>国外代理 QQ 成功/Google 失败</td>
+<td>不进入 overseas 可用结果</td>
+<td>策略</td>
+</tr>
+<tr>
+<td>A10</td>
+<td>地区服务失败、来源与出口冲突</td>
+<td>降级 unknown/保存证据，不凭可达性猜国家</td>
+<td>策略</td>
+</tr>
+<tr>
+<td>A11</td>
+<td>200 正常页、拦截页、同意页、内容不足</td>
+<td>分别得到通过/受限/证据不足，不盲信 200</td>
+<td>分类</td>
+</tr>
+<tr>
+<td>A12</td>
+<td>403、429、Retry-After</td>
+<td>目标受限或延后，不直接当端口失效</td>
+<td>分类</td>
+</tr>
+<tr>
+<td>A13</td>
+<td>代理 407、目标 401、SOCKS 认证错误</td>
+<td>代理认证与目标认证分层，不混为一个 fail</td>
+<td>分类</td>
+</tr>
+<tr>
+<td>A14</td>
+<td>合法跳转、越域、HTTP 降级、循环跳转</td>
+<td>白名单及 3 次上限有效，无自动越界请求</td>
+<td>传输</td>
+</tr>
+<tr>
+<td>A15</td>
+<td>目标证书或代理证书无效</td>
+<td>对应层 TLS 失败，不以 verify=False 补救</td>
+<td>传输</td>
+</tr>
+<tr>
+<td>A16</td>
+<td>环境 ALL_PROXY、NO_PROXY 与采集上下文存在</td>
+<td>指定候选不可用仍失败，不走其他代理或直连</td>
+<td>隔离</td>
+</tr>
+<tr>
+<td>A17</td>
+<td>DNS 阻塞、连接卡住、TLS 卡住、持续慢流</td>
+<td>30 秒整轮截止，2 秒内回收，无任务残留资源</td>
+<td>故障</td>
+</tr>
+<tr>
+<td>A18</td>
+<td>大正文/压缩响应/达到读取上限</td>
+<td>有界读取和关闭；不无限下载或解压</td>
+<td>传输</td>
+</tr>
+<tr>
+<td>A19</td>
+<td>同轮重试、两目标、多轮失败与成功</td>
+<td>同轮不重复计数；连续 3 轮；成功清零</td>
+<td>状态</td>
+</tr>
+<tr>
+<td>A20</td>
+<td>单次失败、过期、目标受限</td>
+<td>默认查询排除；历史记录仍可诊断</td>
+<td>分发</td>
+</tr>
+<tr>
+<td>A21</td>
+<td>多个健康参考代理对目标同时失败</td>
+<td>冻结目标相关删除，目标熔断，不清库</td>
+<td>目标保护</td>
+</tr>
+<tr>
+<td>A22</td>
+<td>无参考代理、直连 Google 不通</td>
+<td>显示 unknown，不能据此判全部代理无效</td>
+<td>目标保护</td>
+</tr>
+<tr>
+<td>A23</td>
+<td>canary 成功恢复</td>
+<td>参考数量、半开状态、恢复限速符合规则</td>
+<td>目标保护</td>
+</tr>
+<tr>
+<td>A24</td>
+<td>手动与定时同时提交、进程重启</td>
+<td>去重、租约、全局限流生效；最终结果幂等</td>
+<td>Redis 集成</td>
+</tr>
+<tr>
+<td>A25</td>
+<td>leader 丢失、租约过期、迟到结果</td>
+<td>新 owner 生效，旧 fence 提交被拒绝</td>
+<td>Redis 集成</td>
+</tr>
+<tr>
+<td>A26</td>
+<td>并发 pop/delete 与在途提交</td>
+<td>不重复消费，不复活已删 endpoint</td>
+<td>Redis 集成</td>
+</tr>
+<tr>
+<td>A27</td>
+<td>Redis 暂时不可用</td>
+<td>明确服务错误，不返回过期结果，不判代理失效</td>
+<td>故障</td>
+</tr>
+<tr>
+<td>A28</td>
+<td>旧 JSON、旧 API、region/type=https</td>
+<td>兼容字段结构；不混入 SOCKS/TLS 连接类型</td>
+<td>兼容</td>
+</tr>
+<tr>
+<td>A29</td>
+<td>迁移重跑、切换失败、恢复旧镜像</td>
+<td>幂等和回滚可用；无双 writer、无 Token/卷丢失</td>
+<td>运维</td>
+</tr>
+<tr>
+<td>A30</td>
+<td>V2 未登录/过期 Token/普通 Token/管理员</td>
+<td>新路径不漏鉴权；配置修改只允许管理员</td>
+<td>API</td>
+</tr>
+<tr>
+<td>A31</td>
+<td>配置热更新、环境覆盖、两个 worker 并发修改</td>
+<td>版本一致；受影响能力重检；不覆盖其他配置</td>
+<td>配置</td>
+</tr>
+<tr>
+<td>A32</td>
+<td>500 endpoint、多协议候选、慢代理</td>
+<td>队列有界，公平调度，延迟可见，不突破额度</td>
+<td>容量</td>
+</tr>
+<tr>
+<td>A33</td>
+<td>fetcherProxy 使用 SOCKS/TLS 代理</td>
+<td>完整 URL 与 DNS 模式正确，采集确实经过该代理</td>
+<td>路由集成</td>
+</tr>
+<tr>
+<td>A34</td>
+<td>HTTP-only 与 V2 明确筛选</td>
+<td>默认不返回；显式查询可见，不伪造 HTTPS 能力</td>
+<td>API</td>
+</tr>
+<tr>
+<td>A35</td>
+<td>认证 URL/异常/响应正文含敏感信息</td>
+<td>列表、日志、指标和错误摘要均脱敏</td>
+<td>日志/API</td>
+</tr>
+<tr>
+<td>A36</td>
+<td>新依赖、Python 矩阵和镜像架构</td>
+<td>Python 3.10—3.13 单测；Python 3.13 镜像；Node 26；Redis 8</td>
+<td>发布</td>
+</tr>
+<tr>
+<td>A37</td>
+<td>Geonode 混合协议 500 条候选</td>
+<td>不再无故丢弃已支持 SOCKS；抓取数与通过数分开</td>
+<td>来源</td>
+</tr>
+<tr>
+<td>A38</td>
+<td>SSDB 配置并启用 V2</td>
+<td>明确拒绝不支持组合；legacy 回归保持通过</td>
+<td>兼容</td>
+</tr>
+<tr>
+<td>A39</td>
+<td>规则版本切换时旧结果返回</td>
+<td>policy/mode epoch 校验阻止旧结果覆盖</td>
+<td>一致性</td>
+</tr>
+<tr>
+<td>A40</td>
+<td>调度积压超 5 分钟/结果过期</td>
+<td>UI/指标提示；不假称 2 分钟已全池复检</td>
+<td>可观测性</td>
+</tr>
+</tbody>
+</table>
+<p>其中协议、超时、Redis 原子性及迁移回滚必须有实际集成证据；其余以单元/API/集成组合覆盖。单纯覆盖率数字不能替代 A01—A40 的业务断言。</p>
+<h2 id="11">11. 交付证据目录与阶段完成标准<a class="headerlink" href="#11" title="Permanent link">&para;</a></h2>
+<p>实施过程中新增日期化验收报告，建议保存到 docs/reports/，只提交脱敏摘要和必要截图，不提交 Redis 原始备份、凭证、完整公网响应或机器专属 .env。</p>
+<p>每份报告应包含：日期与时区、提交、实际镜像/基础镜像 digest、Python/Node/Redis 版本、配置摘要、执行用例 ID、通过/失败/未执行、失败解释、资源曲线摘要和未关闭风险。发布报告再补 GitHub Release、Actions run ID、部署 digest 与回滚点。</p>
+<p>阶段完成必须同时满足：对应任务实现、局部测试通过、附近旧行为无回归、文档同步、门槛有证据。若暂缓某任务，保留未完成并说明影响，不能把不可测或未实现的协议写成已支持。</p>
+<h2 id="12">12. 回滚操作次序<a class="headerlink" href="#12" title="Permanent link">&para;</a></h2>
+<ol>
+<li>停止扩大灰度，记录故障 batch/round 和当前模式，不先删除日志。</li>
+<li>暂停生产者与协调器，吊销 leader/endpoint 租约并推进 mode_epoch，阻止迟到提交。</li>
+<li>停止 worker，确认不再有 V2 结果写入；保存当前 V2 命名空间供复盘。</li>
+<li>恢复部署前记录的旧应用镜像 digest 与 legacy 模式，不重建 Redis。</li>
+<li>按需要恢复冻结的旧代理 Hash；runtime 配置只恢复本次 validation 相关字段，保留新增 Token 和其他用户变更。</li>
+<li>启动旧规则复检，检查登录/Token、旧 API、调度心跳、采集开关和挂载数据。</li>
+<li>记录回滚结果及后续修复范围；再次发布必须使用新的受测提交/版本，不覆盖原 tag。</li>
+</ol>
+<h2 id="13">13. 本轮交付状态<a class="headerlink" href="#13" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] 核对当前仓库检测、采集、存储、API、WebUI 和构建流程。</li>
+<li>[x] 编写详细开发设计与可执行的分阶段计划。</li>
+<li>[x] 编写 V2 业务代码、API 和界面，并进行分阶段回归。</li>
+<li>[x] 新增测试并完成阶段性本地和 Docker 回归。</li>
+<li>[x] 构建本地应用与测试镜像。</li>
+<li>[x] 完成全部 P6 验收与报告。</li>
+<li>[ ] 推送 GitHub、发布版本和部署服务器。</li>
+</ul>
+<p>P6 本地验收已完成，冻结业务提交 79ea9d0；正式发布和服务器阶段随后执行。本文件记录本地验收截止时点，P7 的实际状态以 GitHub Release 和受保护的部署审计记录为准，不以本地镜像冒充 GitHub 版本镜像。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/jhao104/proxy_pool" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

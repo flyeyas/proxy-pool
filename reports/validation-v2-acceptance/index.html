@@ -1,0 +1,1200 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python爬虫代理IP池">
+      
+      
+        <meta name="author" content="jhao104">
+      
+      
+        <link rel="canonical" href="https://jhao104.github.io/proxy_pool/reports/validation-v2-acceptance/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>代理检测 V2 验收记录 - ProxyPool</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+SC:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Noto Sans SC";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#v2" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="ProxyPool" class="md-header__button md-logo" aria-label="ProxyPool" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ProxyPool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              代理检测 V2 验收记录
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="light-blue"  aria-label="切换到暗色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到暗色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="light-blue"  aria-label="切换到亮色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到亮色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="分享" aria-label="分享" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jhao104/proxy_pool" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jhao104/proxy_pool
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  首页
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/" class="md-tabs__link">
+          
+  
+  
+  用户指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../extending/fetcher/" class="md-tabs__link">
+          
+  
+  
+  开发指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  变更日志
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ProxyPool" class="md-nav__button md-logo" aria-label="ProxyPool" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    ProxyPool
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jhao104/proxy_pool" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jhao104/proxy_pool
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    用户指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    用户指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../project-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    项目结构
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    配置参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../validation-v2/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    代理检测 V2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 使用
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    WebUI 后台
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Docker 部署
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    开发指南
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    开发指南
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extending/fetcher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    扩展代理源
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extending/validator/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    扩展校验器
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        受测代码与环境
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        已完成的实际链路
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        强制矩阵的证据位置
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        公网对照的边界
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        覆盖率和资源口径
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        发布与生产门槛
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="v2">代理检测 V2 验收记录<a class="headerlink" href="#v2" title="Permanent link">&para;</a></h1>
+<p>开始日期：2026-11-19（Asia/Shanghai）。本报告区分本地受控验收、公网抽测和生产切换；抓取量不等于可用量，shadow 不等于 active。</p>
+<p>后续更正：服务器影子扩容时发现迁移覆盖率的 pending/非主目标边界，原 622 项用例未覆盖。已暂停上线切换并由 1.6.1 增补 12 项回归修复，详见 validation-v2-1.6.1-hotfix.md。下述资源、协议和持久化测量保留其原始受测提交与口径，不把历史结果改写成补丁重新跑过的结果。</p>
+<h2 id="_1">受测代码与环境<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<ul>
+<li>业务代码冻结于 <code>79ea9d0ee9213c8e9a4eb0c21570eb6e4c7e068f</code>，分支 <code>feat/validation-v2</code>。后续仅补充报告与发布元数据时，应再次比较实际业务文件摘要。</li>
+<li>本机 Python 3.13.13，使用 xiangmu；运行镜像 Python 3.13.18、Node 26.13.1 构建前端，测试 Redis 8.10.3。</li>
+<li>本地应用、测试 Redis、故障恢复 Redis 使用隔离容器；测试不清空共享 Redis，不操作生产数据卷。应用只绑定回环端口。</li>
+<li>最终本机回归（含覆盖率采集）：<strong>622 项通过，29.48 秒</strong>；Docker Python 3.13.18：<strong>622 项通过，20.07 秒</strong>，均包括真实 Redis 集成，无跳过。</li>
+<li>GitHub Tests 运行 <code>44565204751</code>：Python 3.10、3.11、3.12、3.13 全部成功。</li>
+<li>本地 arm64 应用镜像 <code>sha256:986f927bd086fd3a5f4254b8d8793a0390bd2594dae5c2a15327df81354c9ea1</code>；OCI revision 与冻结提交一致，129 个业务、测试、前端与依赖文件 SHA-256 逐一相同。最终资源结果见下文及脱敏 JSON 摘要。</li>
+</ul>
+<h2 id="_2">已完成的实际链路<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<ol>
+<li>HTTP CONNECT、TLS 代理、SOCKS4/4a/5/5h 均访问真实本地 TLS 目标；同时验证 DNS 解析发生侧、代理认证、两层证书校验及目标不收到代理认证头。</li>
+<li>SOCKS5/5h 通过 IPv6 回环代理访问 IPv6 TLS 目标。SOCKS4 userid 的无冒号与空密码表示均通过，非空密码明确 unsupported。</li>
+<li>六种协议的合格记录入 Redis 后，实际由 FetcherProxyRoute + WebRequest/Requests 回用，验证响应正文、额外代理连接和认证隔离。包含百分号、冒号、斜线及 @ 的测试凭证只解码一次。</li>
+<li>userid URL 需要保留空密码分隔符，以兼容 Requests；该问题已作为永久集成用例纳入完整回归。验证器则显式向 SOCKS 管理器传递凭证，避免依赖 URL 推断。</li>
+<li>最终镜像的默认 30 秒整轮截止实测 <strong>30.023 秒</strong>返回 deadline_exceeded，活动网络子进程为 0。慢流夹具持续时间大于截止时间；父进程退出时，仍在网络读取的后代进程也退出。</li>
+<li>最终镜像使用的独立 Redis 暂停 6 秒后恢复，观察到真实超时，约 <strong>45.40 秒</strong>完成接管并恢复 <strong>20/20</strong> 个合格端点；随后重启该 Redis，等待 PING 就绪后确认 AOF 中仍有 <strong>20</strong> 条 V2 端点记录。最初测试脚本误查 legacy Hash 的核对已修正，不能把空 legacy Hash 解释为 V2 数据丢失。</li>
+<li>最终隔离应用删除重建和重启后保留原目录中的 Token 与 validation 配置；普通 Token 不能写检测配置，也不能读取 shadow 代理明细与连接结果，但可读取只读协调器状态。新协调器 owner 实际改变，本轮重启后约 <strong>39.93 秒</strong>接管。该时间包含当轮残余租约，不承诺每次重启都在同一时间恢复。</li>
+<li>用户明确授权后，以隔离测试账号完成浏览器登录；检查真实参数、shadow、协调器在线、目标状态、耗时与认证失败筛选、详情脱敏、前后分页、积压超过 5 分钟提示。刷新保留未保存编辑，读取参数恢复服务端值。未点击生产切换。500 个 UI 合成回环候选已全部清理，最终 catalog、queued、workers 和 oldest_due_delay 均为 0；不与下文 Geonode 的 500 条公网数据混淆。</li>
+<li>增加旧池独立 95% 覆盖率分母，容量拒收不能被当作导入成功，无效旧记录计入未覆盖；旧 writer 排空后再次导入和核验，防止期间新增记录绕过门槛。四个实际 Redis 负向回归覆盖这些边界。</li>
+<li>在同一本地 DB1、数据目录和账号上实际从新镜像退回 <code>v1.5.1</code> 标签源码构建的旧镜像，再恢复最终 <code>v1.6.0</code> 镜像：旧镜像登录、原 Token、WebUI 与 API 通过；7 个本轮测试 Token、源设置、runtime inode 保留，Redis 未重启，最终 shadow 协调器在线。该二进制兼容演练使用空旧池；active 切换、非空 Hash 与原本空 Hash 的回滚另由实际 Redis 集成测试覆盖。</li>
+<li>生产阶段控制脚本先在本地执行 begin、expand50、full、status 和短时 monitor；每次导入恰好一个任务，共 3 个，无门槛时阻止 activate 且不创建切换任务；之后恢复原策略，Token 与源设置不变。</li>
+</ol>
+<p>本地合成候选的界面验收截图（测试后已清理，非公网可用代理）：</p>
+<p><img alt="检测管理页、耗时筛选和积压提示" src="../assets/validation-v2-ui.jpg" /></p>
+<h2 id="_3">强制矩阵的证据位置<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p>下表的测试文件位于仓库 tests/；资源与故障演练原始日志保留于本机隔离验收目录，公开报告只保留脱敏摘要。</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>主要证据</th>
+<th>已核对的断言</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A01、A02、A05、A15、A16</td>
+<td>integration/test_validation_protocols.py</td>
+<td>真实隧道、两层 CA、错误 scheme、显式候选不能被环境代理或直连掩盖</td>
+</tr>
+<tr>
+<td>A03、A04、A13</td>
+<td>同上及 integration/test_validation_pipeline.py</td>
+<td>SOCKS userid/密码、DNS 模式、IPv6、六协议认证与实际采集回用</td>
+</tr>
+<tr>
+<td>A06、A07、A09、A20、A34</td>
+<td>unit/test_validation_state.py、integration/test_validation_store.py、api/test_validation_api.py</td>
+<td>主目标 HTTPS 独立准入；各协议/目标分开；HTTP-only 不混入默认结果</td>
+</tr>
+<tr>
+<td>A08、A10</td>
+<td>unit/test_validation_v2.py、unit/test_validation_state.py、integration/test_validation_store.py</td>
+<td>地区映射、未知双目标、来源冲突和较强出口证据</td>
+</tr>
+<tr>
+<td>A11、A12、A14、A18</td>
+<td>unit/test_validation_v2.py、integration/test_validation_protocols.py</td>
+<td>内容证据、403/429、Retry-After、白名单跳转、正文/压缩边界</td>
+</tr>
+<tr>
+<td>A17</td>
+<td>integration/test_validation_protocols.py、默认截止演练</td>
+<td>阻塞 DNS、代理 TLS、持续慢流、父进程死亡和进程回收</td>
+</tr>
+<tr>
+<td>A19、A21、A22、A23</td>
+<td>unit/test_validation_state.py、integration/test_validation_store.py</td>
+<td>独立轮次计数、成功重置、参考失效回 unknown、不同 canary 与恢复</td>
+</tr>
+<tr>
+<td>A24、A25、A26</td>
+<td>integration/test_validation_store.py、integration/test_validation_pipeline.py</td>
+<td>实际 Redis 领取、fence、迟到提交、并发消费、配额、配置热更新与公平队列</td>
+</tr>
+<tr>
+<td>A27</td>
+<td>api/test_validation_api.py、独立 Redis 故障/AOF 演练</td>
+<td>503 不降级旧池或直连；断连不误判端点死亡；恢复和持久化</td>
+</tr>
+<tr>
+<td>A28、A29</td>
+<td>既有兼容测试、integration/test_validation_pipeline.py、应用重启演练</td>
+<td>旧 JSON/API、HTTP 兼容投影、幂等迁移、空池/非空池回滚、Token 和配置保留</td>
+</tr>
+<tr>
+<td>A30、A31</td>
+<td>api/test_validation_api.py、unit/test_validation_state.py、integration/test_validation_pipeline.py</td>
+<td>鉴权、管理员写权限、环境锁定、配置版本和在途任务处理</td>
+</tr>
+<tr>
+<td>A32、A40</td>
+<td>scripts/validation_soak.py、协调器状态 API、管理页</td>
+<td>500 候选/档、1/4/8/20 worker、有界回收、队列实际延迟；最终 12 档长测及积压提示通过</td>
+</tr>
+<tr>
+<td>A33</td>
+<td>integration/test_validation_pipeline.py::test_qualified_proxy_is_reused_by_real_fetcher_requests</td>
+<td>六协议由采集器实际回用，不能只以拼接 URL 的单测替代</td>
+</tr>
+<tr>
+<td>A35</td>
+<td>unit/test_validation_state.py、API 与协议用例</td>
+<td>递归脱敏、认证 URL/异常、列表不含密码、认证头不发给目标</td>
+</tr>
+<tr>
+<td>A36</td>
+<td>GitHub Tests 矩阵、本地 Docker 构建</td>
+<td>最终提交四版本 CI 已通过、本地 arm64 镜像已核对；发布镜像双架构待 GitHub 构建</td>
+</tr>
+<tr>
+<td>A37</td>
+<td>Geonode 公网抽测、unit/test_validation_state.py</td>
+<td>混合协议与国家提示保留，抓取量和通过量分别统计</td>
+</tr>
+<tr>
+<td>A38、A39</td>
+<td>unit/test_validation_state.py、integration/test_validation_store.py</td>
+<td>SSDB V2 明确拒绝；旧 policy/mode epoch/fence 结果不能覆盖</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_4">公网对照的边界<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<p>2026-11-19，利用已授权的本机 HTTP 代理获取 Geonode <strong>500</strong> 个候选：HTTP 189、HTTPS 能力提示 95、SOCKS5 146、SOCKS4 70。候选验证始终通过各候选本身，不通过采集所用的代理兜底。</p>
+<p>抽样 8 个端点、14 个协议结果：12 个连接/读取超时、1 个认证失败、1 个代理层 TLS 错误、0 个合格。这不是全量 500 个端点的判死报告，也不是生产服务器可达性的结论。</p>
+<p>同一本机 HTTP 代理使用 V2 传输作对照：连接/读取预算 3/5 秒时 QQ 200、Google 超时；6/8 秒时 QQ 与 Google 均为 200，Google 约 4.16 秒。默认值仍是 3/5 秒。部署应根据实际出口测量调整超时，而不降低 TLS、主目标或内容要求。</p>
+<p>2026-11-20 使用最终冻结镜像复核：Geonode 默认采集预算出现读取超时，没有取得 HTTP 响应或候选，不能写成“接口正常返回 0 条”。采集侧另做一次 6/20 秒、单次请求诊断，仍约 6.2 秒超时；它不是已经完成 20 秒源站读取的证明，也不能据此断定请求过频。该诊断仅覆盖临时采集请求，不改变代码默认值。上列 500 条/8 个样本是较早时点的实际记录；其 Geonode 取数与候选规范化代码至最终冻结未变。</p>
+<p>最终时点的同一本机 HTTP 代理对照：3/5 秒下 QQ 200、Google 超时；6/8 秒下两站 200，Google 约 2.685 秒。请求间时延变化明显，单次对照不能保证任意出口在固定预算内稳定成功。公网抽样限制为 2 个 worker、无额外重试、关闭出口补查，结果不混入受控集成测试的通过数。</p>
+<h2 id="_5">覆盖率和资源口径<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<p>最终 622 项全套用例的 V2 branch coverage 测量：整体综合覆盖率 <strong>82.39%</strong>，语句 <strong>85.88%</strong>，分支 <strong>73.94%</strong>；state.py 综合 <strong>90.74%</strong>，分支 <strong>83.93%</strong>。不能写成全套分支覆盖 90%。进程/真实 Redis/故障演练的业务断言比单一覆盖率数字更直接；建议的 90% 分支目标尚未达到，应作为后续改进项保留。</p>
+<p>本地隔离采用独立 Docker 网络、专用容器、回环端口、Redis DB/UUID 命名空间和主机目录挂载；没有再增加机器专用 Compose 文件。它与计划中的隔离 Compose 项目达到相同的端口和数据隔离目的，未覆盖原有本地或生产卷。</p>
+<p>最终镜像的混合负载演练实际运行 <strong>3600.11 秒</strong>，12 档均完成，每档约 5 分钟、500 个候选，不是每档各运行 60 分钟。容器限额 <strong>1536 MiB</strong>，协调器与子进程 RSS 合计峰值 <strong>758336 KiB（740.56 MiB）</strong>，低于该限额的 70%；FD 峰值 <strong>277</strong>，进程峰值 <strong>22</strong>。结束时协调器已停止，RSS 合计 <strong>70392 KiB（68.74 MiB）</strong>、FD <strong>13</strong>、进程 <strong>2</strong>（测试主进程与资源跟踪器），没有残留网络 worker。各档后半段采样未出现持续单调增长。该结论限于本轮测量，不承诺任意长期负载下绝无泄漏。</p>
+<table>
+<thead>
+<tr>
+<th>Worker</th>
+<th>场景</th>
+<th>完成轮次</th>
+<th>目标请求数</th>
+<th>FD 峰值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>快响应</td>
+<td>1701</td>
+<td>1702</td>
+<td>28</td>
+</tr>
+<tr>
+<td>1</td>
+<td>拒绝连接</td>
+<td>1715</td>
+<td>0</td>
+<td>25</td>
+</tr>
+<tr>
+<td>1</td>
+<td>慢流</td>
+<td>292</td>
+<td>292</td>
+<td>28</td>
+</tr>
+<tr>
+<td>4</td>
+<td>快响应</td>
+<td>4052</td>
+<td>4052</td>
+<td>61</td>
+</tr>
+<tr>
+<td>4</td>
+<td>拒绝连接</td>
+<td>4072</td>
+<td>2</td>
+<td>58</td>
+</tr>
+<tr>
+<td>4</td>
+<td>慢流</td>
+<td>1164</td>
+<td>1168</td>
+<td>73</td>
+</tr>
+<tr>
+<td>8</td>
+<td>快响应</td>
+<td>4435</td>
+<td>4378</td>
+<td>106</td>
+</tr>
+<tr>
+<td>8</td>
+<td>拒绝连接</td>
+<td>4491</td>
+<td>6</td>
+<td>106</td>
+</tr>
+<tr>
+<td>8</td>
+<td>慢流</td>
+<td>2328</td>
+<td>2333</td>
+<td>133</td>
+</tr>
+<tr>
+<td>20</td>
+<td>快响应</td>
+<td>5068</td>
+<td>366</td>
+<td>233</td>
+</tr>
+<tr>
+<td>20</td>
+<td>拒绝连接</td>
+<td>5351</td>
+<td>2</td>
+<td>233</td>
+</tr>
+<tr>
+<td>20</td>
+<td>慢流</td>
+<td>5668</td>
+<td>3622</td>
+<td>277</td>
+</tr>
+</tbody>
+</table>
+<p>资源演练关闭目标熔断并采用每目标 20 请求/秒、1 秒整轮预算，施加传输和进程回收压力；生产默认仍是每目标 2 请求/秒和 30 秒整轮预算。完成轮次包含预算延期、失败等，不是成功请求数；20 worker 下的 1 秒压力预算也不是生产吞吐承诺。目标计数按夹具路径累加，档位切换边缘可能计入上一档已在途的连接；禁止直连回退另由独立协议负向用例断言。</p>
+<p>机器可读的脱敏摘要：validation-v2-resource-summary.json。较早实现的长测仅作历史基线，没有替代本次冻结版本的 3600.11 秒结果。</p>
+<h2 id="_6">发布与生产门槛<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
+<p><strong>P6 本地验收完成。</strong> 本报告记录本地受控、故障、回退兼容和资源测量，不代替生产 active 验证。后续合并/发布版本，经 GitHub 标签测试门禁构建 amd64/arm64 镜像，再按固定 digest 部署；报告与发布元数据的后续修改不得改变已冻结业务文件。生产保留旧镜像、配置、Redis 卷与回滚快照，先小样本 shadow 再扩大。V2 或旧池覆盖率低于 95%、合格 HTTP 代理少于默认 20 时不强制 active；实际发布及部署状态以 GitHub Release 和受保护的部署审计记录为准。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/jhao104/proxy_pool" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>

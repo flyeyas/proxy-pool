@@ -1,0 +1,229 @@
+{
+  "python": "3.13.18",
+  "platform": "Linux-7.0.14-linuxkit-aarch64-with",
+  "duration_seconds": 3600.11,
+  "endpoints_per_stage": 500,
+  "test_target_rps": 20,
+  "target_breaker_disabled_for_load": true,
+  "peak_rss_kib": 758336,
+  "peak_fds": 277,
+  "peak_processes": 22,
+  "coordinator_stopped": true,
+  "final_resources": {
+    "rss_kib": 70392,
+    "processes": 2,
+    "fds": 13
+  },
+  "stages": [
+    {
+      "workers": 1,
+      "scenario": "fast",
+      "effective_workers": 1,
+      "duration": 299.65,
+      "rounds_completed": 1701,
+      "target_requests": 1702,
+      "samples": 598,
+      "second_half_rss_median_kib": 89364,
+      "second_half_rss_range_kib": [
+        63944,
+        100504
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 3,
+      "peak_fds": 28
+    },
+    {
+      "workers": 1,
+      "scenario": "refused",
+      "effective_workers": 1,
+      "duration": 299.51,
+      "rounds_completed": 1715,
+      "target_requests": 0,
+      "samples": 597,
+      "second_half_rss_median_kib": 91380,
+      "second_half_rss_range_kib": [
+        66092,
+        102448
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 3,
+      "peak_fds": 25
+    },
+    {
+      "workers": 1,
+      "scenario": "slow",
+      "effective_workers": 1,
+      "duration": 299.46,
+      "rounds_completed": 292,
+      "target_requests": 292,
+      "samples": 595,
+      "second_half_rss_median_kib": 102904.0,
+      "second_half_rss_range_kib": [
+        66484,
+        103012
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 3,
+      "peak_fds": 28
+    },
+    {
+      "workers": 4,
+      "scenario": "fast",
+      "effective_workers": 4,
+      "duration": 298.89,
+      "rounds_completed": 4052,
+      "target_requests": 4052,
+      "samples": 597,
+      "second_half_rss_median_kib": 184564,
+      "second_half_rss_range_kib": [
+        158776,
+        204848
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 6,
+      "peak_fds": 61
+    },
+    {
+      "workers": 4,
+      "scenario": "refused",
+      "effective_workers": 4,
+      "duration": 299.48,
+      "rounds_completed": 4072,
+      "target_requests": 2,
+      "samples": 598,
+      "second_half_rss_median_kib": 183136,
+      "second_half_rss_range_kib": [
+        136852,
+        203156
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 6,
+      "peak_fds": 58
+    },
+    {
+      "workers": 4,
+      "scenario": "slow",
+      "effective_workers": 4,
+      "duration": 299.48,
+      "rounds_completed": 1164,
+      "target_requests": 1168,
+      "samples": 595,
+      "second_half_rss_median_kib": 213228.0,
+      "second_half_rss_range_kib": [
+        140380,
+        216940
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 6,
+      "peak_fds": 73
+    },
+    {
+      "workers": 8,
+      "scenario": "fast",
+      "effective_workers": 8,
+      "duration": 299.43,
+      "rounds_completed": 4435,
+      "target_requests": 4378,
+      "samples": 597,
+      "second_half_rss_median_kib": 317296,
+      "second_half_rss_range_kib": [
+        211152,
+        345588
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 10,
+      "peak_fds": 106
+    },
+    {
+      "workers": 8,
+      "scenario": "refused",
+      "effective_workers": 8,
+      "duration": 299.46,
+      "rounds_completed": 4491,
+      "target_requests": 6,
+      "samples": 597,
+      "second_half_rss_median_kib": 321900,
+      "second_half_rss_range_kib": [
+        250088,
+        346672
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 10,
+      "peak_fds": 106
+    },
+    {
+      "workers": 8,
+      "scenario": "slow",
+      "effective_workers": 8,
+      "duration": 299.23,
+      "rounds_completed": 2328,
+      "target_requests": 2333,
+      "samples": 595,
+      "second_half_rss_median_kib": 349696.0,
+      "second_half_rss_range_kib": [
+        264608,
+        363536
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 10,
+      "peak_fds": 133
+    },
+    {
+      "workers": 20,
+      "scenario": "fast",
+      "effective_workers": 20,
+      "duration": 298.78,
+      "rounds_completed": 5068,
+      "target_requests": 366,
+      "samples": 593,
+      "second_half_rss_median_kib": 679012,
+      "second_half_rss_range_kib": [
+        298952,
+        741704
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 22,
+      "peak_fds": 233
+    },
+    {
+      "workers": 20,
+      "scenario": "refused",
+      "effective_workers": 20,
+      "duration": 298.9,
+      "rounds_completed": 5351,
+      "target_requests": 2,
+      "samples": 593,
+      "second_half_rss_median_kib": 680376,
+      "second_half_rss_range_kib": [
+        375980,
+        733628
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 22,
+      "peak_fds": 233
+    },
+    {
+      "workers": 20,
+      "scenario": "slow",
+      "effective_workers": 20,
+      "duration": 298.93,
+      "rounds_completed": 5668,
+      "target_requests": 3622,
+      "samples": 593,
+      "second_half_rss_median_kib": 722264,
+      "second_half_rss_range_kib": [
+        614172,
+        757732
+      ],
+      "second_half_strictly_increasing": false,
+      "peak_processes": 22,
+      "peak_fds": 277
+    }
+  ],
+  "below_70_percent_of_1536_mib": true,
+  "test_commit": "79ea9d0ee9213c8e9a4eb0c21570eb6e4c7e068f",
+  "test_image": "sha256:986f927bd086fd3a5f4254b8d8793a0390bd2594dae5c2a15327df81354c9ea1",
+  "container_memory_limit_mib": 1536,
+  "host_cpu_count": 8,
+  "scope": "60 minute mixed load; approximately 5 minutes per stage; not a proxy success benchmark"
+}
