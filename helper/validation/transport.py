@@ -108,7 +108,7 @@ def probe(candidate, variant, profile, policy, deadline=None, permit=None):
     result = TargetResult(variant, profile, 'deferred', 'budget', checked_at=time.time(),
                           policy_version=policy.version)
     if variant in ('socks4', 'socks4a'):
-        if candidate.password is not None:
+        if candidate.password:
             result.code, result.stage = 'unsupported', 'authentication'
             return result
         try:

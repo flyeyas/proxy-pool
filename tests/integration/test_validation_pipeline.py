@@ -1,15 +1,61 @@
 import json
 import threading
 import time
+from urllib.parse import quote
 import pytest
 
 from helper.validation.config import save_desired
 from helper.validation.coordinator import ValidationCoordinator
 from helper.validation.migration import activate, rollback
 from helper.validation.normalize import normalize_candidate
+from helper.validation.worker import validate_round
 from tests.fixtures.proxy_network import certificates, proxy_service, target_service
 from tests.integration.test_validation_protocols import policy_for
 from tests.integration.test_validation_store import store, enqueue, result
+
+
+@pytest.mark.parametrize('variant', ['http', 'https', 'socks4', 'socks4a', 'socks5', 'socks5h'])
+def test_qualified_proxy_is_reused_by_real_fetcher_requests(store, tmp_path, monkeypatch, variant):
+    from helper import fetcherProxy
+    from helper.validation import service
+    from util.webRequest import WebRequest
+    repo, _, control, owner = store
+    ca, tls = certificates(tmp_path)
+    kind = 'http' if variant in ('http', 'https') else 'socks4' if variant.startswith('socks4') else 'socks5'
+    username, password = 'user%40name', 'pass:@/%word'
+    authority = quote(username, safe='')
+    if not variant.startswith('socks4'):
+        authority += ':' + quote(password, safe='')
+    remote = variant in ('http', 'https', 'socks4a', 'socks5h')
+    with target_service(tls) as (target_port, targets), proxy_service(
+            kind, tls=tls if variant == 'https' else None, authentication=True,
+            username=username, password=password) as (port, events):
+        policy = policy_for(target_port, ca, remote=remote)
+        updated = {**control, 'mode': 'active', 'policy': policy.to_dict(),
+                   'policy_version': policy.version, 'config_version': policy.fingerprint}
+        assert repo.update_control(control, updated)
+        candidate = normalize_candidate({'proxy': '%s://%s@127.0.0.1:%d' % (variant, authority, port),
+                                         'country': 'CN'}, identity_key=b'x' * 32)
+        assert repo.submit(candidate, policy)
+        task = repo.claim(owner, repo.control())
+        results = validate_round(candidate, (variant,), policy, 'CN')
+        assert results[0]['code'] == 'available'
+        assert repo.commit(task, results, policy, owner)
+        monkeypatch.setattr(service, 'mode', lambda: 'active')
+        monkeypatch.setattr(service, 'effective', lambda: (repo, repo.control(), policy))
+        monkeypatch.setenv('ALL_PROXY', 'http://127.0.0.1:1')
+        monkeypatch.setenv('HTTPS_PROXY', 'http://127.0.0.1:1')
+        token = fetcherProxy._CURRENT_ROUTE.set(fetcherProxy.FetcherProxyRoute(True))
+        before = len(events)
+        try:
+            response = WebRequest().get(policy.targets['domestic'].url, verify=ca,
+                                        retry_time=1, timeout=(2, 3))
+            assert response.last_error is None
+            assert response.response.status_code == 200 and 'Google' in response.text
+        finally:
+            fetcherProxy._CURRENT_ROUTE.reset(token)
+        assert len(events) == before + 1 and len(targets) >= 2
+        assert all(target['proxy_authorization'] is None for target in targets)
 
 
 def _delayed_round(connection, candidate, variants, policy_data, country):

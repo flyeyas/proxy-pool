@@ -48,10 +48,8 @@ class ProxyCandidate:
             raise ValueError('unsupported proxy variant')
         auth = ''
         if credentials and self.username is not None:
-            auth = quote(self.username, safe='')
-            if self.password is not None:
-                auth += ':' + quote(self.password, safe='')
-            auth += '@'
+            # Keep the empty password separator: Requests otherwise drops userid.
+            auth = quote(self.username, safe='') + ':' + quote(self.password or '', safe='') + '@'
         return '%s://%s%s' % (variant, auth, self.address)
 
     def public_dict(self):

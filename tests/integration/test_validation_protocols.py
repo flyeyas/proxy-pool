@@ -107,10 +107,11 @@ def test_proxy_certificate_verification_is_independent(certs):
 
 
 @pytest.mark.parametrize('variant', ['socks4', 'socks4a'])
-def test_socks4_user_id_is_sent_without_claiming_password_auth(certs, variant):
+@pytest.mark.parametrize('authority', ['user', 'user:'])
+def test_socks4_user_id_is_sent_without_claiming_password_auth(certs, variant, authority):
     ca, tls = certs
     with target_service(tls) as (target_port, _), proxy_service('socks4', authentication=True) as (port, _):
-        candidate = normalize_candidate('%s://user@127.0.0.1:%d' % (variant, port), identity_key=b'x' * 32)
+        candidate = normalize_candidate('%s://%s@127.0.0.1:%d' % (variant, authority, port), identity_key=b'x' * 32)
         policy = policy_for(target_port, ca)
         assert probe(candidate, variant, 'domestic', policy).passed
         bad = normalize_candidate('%s://wrong@127.0.0.1:%d' % (variant, port), identity_key=b'x' * 32)
