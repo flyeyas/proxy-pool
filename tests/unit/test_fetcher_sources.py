@@ -176,6 +176,10 @@ class TestGeonodeFetcher(object):
         self._set_response(mock_wr, json_data)
         result = list(GeonodeFetcher().fetch())
         assert "1.2.3.4:8080" in result
+        mock_wr.return_value.get.assert_called_once_with(
+            'https://proxylist.geonode.com/api/proxy-list?'
+            'page=1&limit=500&sort_by=responseTime&sort_type=asc',
+            timeout=5, retry_time=2, retry_interval=1, verify=False)
 
     @patch("fetcher.sources.geonode.WebRequest")
     def test_fetch_text_fallback(self, mock_wr):

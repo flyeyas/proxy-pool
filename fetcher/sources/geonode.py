@@ -9,6 +9,7 @@
    Change Activity:
                    2026/05/31:
                    2026/11/18: 记录响应诊断并过滤不支持的 SOCKS 代理
+                   2026/11/19: 改为每页 500 条并按响应时间升序获取
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -31,7 +32,7 @@ class GeonodeFetcher(BaseFetcher):
     def fetch(self):
         self.last_error = None
         url = ("https://proxylist.geonode.com/api/proxy-list?"
-               "filterLastChecked=10&page=1&limit=100&sort_by=lastChecked&sort_type=desc")
+               "page=1&limit=500&sort_by=responseTime&sort_type=asc")
         started = time.monotonic()
         request = WebRequest()
         r = request.get(url, timeout=5, retry_time=2, retry_interval=1, verify=False)
