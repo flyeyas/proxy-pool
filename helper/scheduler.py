@@ -49,6 +49,12 @@ def __runFetchers(fetcher_names=None, exclude_fetcher_names=None):
 
 
 def __runProxyCheck():
+    from helper.validation.service import mode, repository
+    if mode() == 'active':
+        # V2 owns continuous due scheduling for every protocol, not just the HTTP
+        # compatibility projection consumed by the old API.
+        repo = repository()
+        return {'queued': repo.redis.zcard(repo.due)}
     proxy_handler = ProxyHandler()
     proxy_queue = Queue()
     if proxy_handler.db.getCount().get("total", 0) < proxy_handler.conf.poolSizeMin:
@@ -59,6 +65,8 @@ def __runProxyCheck():
 
 
 def runScheduler():
+    from helper.validation.coordinator import start_coordinator
+    validation, validation_thread = start_coordinator()
     timezone = ConfigHandler().timezone
     scheduler_log = LogHandler("scheduler")
     scheduler = BlockingScheduler(logger=scheduler_log, timezone=timezone)
@@ -94,6 +102,8 @@ def runScheduler():
         raise
     finally:
         monitor.stop()
+        validation.stop.set()
+        validation_thread.join(timeout=10)
 
 
 if __name__ == '__main__':

@@ -336,11 +336,18 @@ def test_stopped_or_failed_scheduler_is_offline(monitor):
 
 
 def test_jobs_execute_through_real_thread_executor(monitor):
+    from apscheduler.events import EVENT_JOB_REMOVED
     completed = threading.Event()
+    removed = threading.Event()
+    monitor.scheduler.add_listener(lambda event: removed.set() if event.job_id == 'proxy_fetch' else None,
+                                    EVENT_JOB_REMOVED)
     monitor.scheduler.add_job(monitor.wrap('proxy_fetch', lambda: completed.set()),
                               'date', id='proxy_fetch')
     monitor.scheduler.start()
     assert completed.wait(timeout=5)
+    # The executor can complete before the scheduler removes a one-shot job.
+    # Shutting down in that window races remove_all_jobs with remove_job.
+    assert removed.wait(timeout=5)
     monitor.scheduler.shutdown(wait=True)
     data = status_mod.getSchedulerStatus()
     assert data['status'] == 'stopped'

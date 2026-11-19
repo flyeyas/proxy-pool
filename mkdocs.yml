@@ -85,6 +85,7 @@ nav:
       - 快速开始: getting-started.md
       - 项目结构: project-structure.md
       - 配置参考: configuration.md
+      - 代理检测 V2: validation-v2.md
       - API 使用: api.md
       - WebUI 后台: webui.md
       - Docker 部署: docker.md

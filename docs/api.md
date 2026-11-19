@@ -1,5 +1,7 @@
 # API 使用
 
+新增多协议接口与地区主目标规则见 [代理检测 V2](validation-v2.md)。旧接口的 type=https 表示访问 HTTPS 网站的能力，不表示需要以 TLS 连接代理。
+
 ## 响应格式约定
 
 所有接口返回统一的 JSON 包裹格式，`code` 与 HTTP 状态码一致（保持真实语义，不做永远 200）：
@@ -68,7 +70,7 @@ def get_html():
                 "http://www.example.com",
                 proxies={
                     "http": "http://{}".format(proxy),
-                    "https": "https://{}".format(proxy),
+                    "https": "http://{}".format(proxy),
                 },
             )
             return html

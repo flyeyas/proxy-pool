@@ -10,7 +10,11 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  tests:
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
   build-and-push:
+    needs: tests
     runs-on: ubuntu-latest
     permissions:
       contents: read

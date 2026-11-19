@@ -1,5 +1,7 @@
 # 配置参考
 
+本页的 HTTP_URL、HTTPS_URL、VERIFY_TIMEOUT、MAX_FAIL_COUNT 属于 legacy 引擎。V2 使用独立的 validation 策略，不将旧 MAX_FAIL_COUNT=0 继承为首败即删；配置、生效版本和环境覆盖见 [代理检测 V2](validation-v2.md)。
+
 配置文件 `setting.py` 位于项目的主目录下，配置主要分为五类：**服务配置**、**数据库配置**、**采集配置**、**校验配置**、**调度配置**。
 
 ## 环境变量与 .env 文件

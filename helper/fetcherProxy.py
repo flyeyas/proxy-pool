@@ -37,6 +37,21 @@ class FetcherProxyRoute:
         direct = {'http': None, 'https': None, 'all': None, 'no_proxy': '*'}
         if not self.use_proxy or scheme not in ('http', 'https'):
             return direct
+        from helper.validation.service import mode, effective
+        if mode() == 'active':
+            try:
+                repo, control, policy = effective()
+                route = repo.route(policy, exclude=self._failed[scheme])
+                if route:
+                    endpoint, variant, profile = route
+                    self._selected[scheme] = endpoint.endpoint_id
+                    candidate = endpoint.candidate(repo.credentials(endpoint))
+                    proxy_url = candidate.proxy_url(variant, credentials=True)
+                    return {'http': proxy_url, 'https': proxy_url, 'all': None, 'no_proxy': '*'}
+                return direct
+            except Exception:
+                LogHandler('fetcher').warning('V2 proxy route unavailable; using configured fetcher direct fallback')
+                return direct
         try:
             if self._handler is None:
                 self._handler = ProxyHandler()

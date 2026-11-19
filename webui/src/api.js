@@ -38,6 +38,18 @@ async function request(url, options = {}) {
 }
 
 export const api = {
+  validationStatus: () => request('/api/v2/validation/status/'),
+  validationConfig: () => request('/api/v2/validation/config/'),
+  validationSaveConfig: (data) => request('/api/v2/validation/config/', {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+  }),
+  validationProxies: (filters = {}) => request('/api/v2/proxies/?' + new URLSearchParams(
+    Object.entries(filters).filter(([, value]) => value !== '' && value !== null && value !== undefined)
+  )),
+  validationJob: (data) => request('/api/v2/validation/jobs/', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+  }),
+  validationJobStatus: (id) => request('/api/v2/validation/jobs/' + encodeURIComponent(id) + '/'),
   authStatus: () => request('/auth/status/'),
   login: (username, password) =>
     request('/auth/login/', {

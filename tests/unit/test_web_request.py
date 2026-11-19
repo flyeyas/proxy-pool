@@ -39,6 +39,17 @@ def _mock_response(status_code=200, text=None, content=None, json_data=None):
 class TestWebRequestGet:
     """get() 测试"""
 
+    @patch('util.webRequest.requests.get')
+    def test_proxy_credentials_are_removed_from_error_and_logs(self, mock_get):
+        mock_get.side_effect = RuntimeError('failed via http://private-user:private-password@proxy.example:80')
+        request = WebRequest()
+        request.log = MagicMock()
+        request.get('https://example.com?token=private-token', retry_time=1)
+        assert 'private-user' not in request.last_error
+        assert 'private-password' not in request.last_error
+        output = str(request.log.error.call_args_list)
+        assert 'private-token' not in output and 'private-password' not in output
+
     @patch("util.webRequest.time.sleep")
     @patch("util.webRequest.requests.get")
     def test_success_path(self, mock_get, mock_sleep):

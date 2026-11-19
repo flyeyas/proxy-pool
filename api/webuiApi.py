@@ -102,7 +102,7 @@ def _releaseRefreshLock(handle):
 
 # 需要授权才能访问的接口(前缀匹配): 代理数据接口 + 管理接口 + token 管理
 _PROTECTED_PREFIXES = ('/get', '/pop', '/all', '/count',
-                       '/fetchers', '/logs', '/scheduler', '/delete', '/auth/tokens')
+                       '/fetchers', '/logs', '/scheduler', '/delete', '/auth/tokens', '/api/v2/')
 _SESSION_KEY = 'webui_login'
 
 

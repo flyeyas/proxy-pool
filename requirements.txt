@@ -1,5 +1,7 @@
 # 支持版本: Python 3.10 - 3.13(与 CI 测试矩阵及 Docker 镜像一致)
 requests==2.34.2
+urllib3==2.7.0
+PySocks==1.7.1
 gunicorn>=23.0
 lxml==6.1.3
 redis>=4.2,<9.0

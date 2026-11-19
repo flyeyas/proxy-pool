@@ -15,6 +15,7 @@ runtime_config.json
 docs/ideas/
 docs/specs/
 .coverage
+.coverage.*
 .pytest_cache/
 htmlcov/
 webui/node_modules/

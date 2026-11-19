@@ -116,26 +116,32 @@ class _ThreadChecker(Thread):
     def __ifRaw(self, proxy):
         if proxy.last_status:
             if self.proxy_handler.exists(proxy):
-                self.log.info('RawProxyCheck - {}: {} exist'.format(self.name, proxy.proxy.ljust(23)))
+                self.log.info('RawProxyCheck - {}: {} exist'.format(self.name, proxy.proxy.rsplit('@', 1)[-1].ljust(23)))
             else:
-                self.log.info('RawProxyCheck - {}: {} pass'.format(self.name, proxy.proxy.ljust(23)))
+                self.log.info('RawProxyCheck - {}: {} pass'.format(self.name, proxy.proxy.rsplit('@', 1)[-1].ljust(23)))
                 self.proxy_handler.put(proxy)
         else:
-            self.log.info('RawProxyCheck - {}: {} fail'.format(self.name, proxy.proxy.ljust(23)))
+            self.log.info('RawProxyCheck - {}: {} fail'.format(self.name, proxy.proxy.rsplit('@', 1)[-1].ljust(23)))
 
     def __ifUse(self, proxy):
         if proxy.last_status:
-            self.log.info('UseProxyCheck - {}: {} pass'.format(self.name, proxy.proxy.ljust(23)))
+            self.log.info('UseProxyCheck - {}: {} pass'.format(self.name, proxy.proxy.rsplit('@', 1)[-1].ljust(23)))
             self.proxy_handler.put(proxy)
         else:
             if proxy.fail_count > self.conf.maxFailCount:
                 self.log.info('UseProxyCheck - {}: {} fail, count {} delete'.format(self.name,
-                                                                                    proxy.proxy.ljust(23),
+                                                                                    proxy.proxy.rsplit('@', 1)[-1].ljust(23),
                                                                                     proxy.fail_count))
-                self.proxy_handler.delete(proxy)
+                from helper.validation.service import mode, repository
+                if mode() == 'legacy':
+                    self.proxy_handler.delete(proxy)
+                else:
+                    # A legacy HEAD failure must neither erase V2 evidence in shadow
+                    # mode nor delete the active projection after a late result.
+                    repository().guarded_legacy_delete(proxy)
             else:
                 self.log.info('UseProxyCheck - {}: {} fail, count {} keep'.format(self.name,
-                                                                                  proxy.proxy.ljust(23),
+                                                                                  proxy.proxy.rsplit('@', 1)[-1].ljust(23),
                                                                                   proxy.fail_count))
                 self.proxy_handler.put(proxy)
 
@@ -147,13 +153,29 @@ def Checker(tp, queue):
     :param queue: Proxy Queue
     :return:
     """
-    thread_list = list()
-    for index in range(20):
-        thread_list.append(_ThreadChecker(tp, queue, "thread_%s" % str(index).zfill(2)))
-
-    for thread in thread_list:
-        thread.setDaemon(True)
-        thread.start()
-
-    for thread in thread_list:
-        thread.join()
+    from helper.validation.service import mode, submit, legacy_writer
+    current_mode = mode()
+    if current_mode != 'legacy':
+        proxies = []
+        while True:
+            try:
+                proxies.append(queue.get_nowait())
+                queue.task_done()
+            except Empty:
+                break
+        submit(proxies)
+        if current_mode == 'active':
+            return
+        for proxy in proxies:
+            candidate = proxy.validation_candidate
+            if candidate is None or not candidate.protocols or set(candidate.protocols) & {'http', 'https'}:
+                queue.put(proxy)
+    with legacy_writer() as allowed:
+        if not allowed:
+            return
+        thread_list = [_ThreadChecker(tp, queue, 'thread_%s' % index) for index in range(20)]
+        for thread in thread_list:
+            thread.daemon = True
+            thread.start()
+        for thread in thread_list:
+            thread.join()
