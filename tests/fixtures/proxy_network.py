@@ -38,7 +38,8 @@ def certificates(directory):
             .not_valid_before(now - timedelta(days=1)).not_valid_after(now + timedelta(days=7))
             .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(key.public_key()), critical=False)
             .add_extension(x509.SubjectAlternativeName([x509.DNSName('remote.test'), x509.DNSName('localhost'),
-                                                       x509.IPAddress(ipaddress.ip_address('127.0.0.1'))]), critical=False)
+                                                       x509.IPAddress(ipaddress.ip_address('127.0.0.1')),
+                                                       x509.IPAddress(ipaddress.ip_address('::1'))]), critical=False)
             .sign(key, hashes.SHA256()))
     ca_path, cert_path, key_path = [directory / n for n in ('ca.pem', 'leaf.pem', 'key.pem')]
     ca_path.write_bytes(ca.public_bytes(serialization.Encoding.PEM))
@@ -92,7 +93,8 @@ class QuietServer(socketserver.ThreadingTCPServer):
 
 
 @contextlib.contextmanager
-def proxy_service(kind, tls=None, authentication=False):
+def proxy_service(kind, tls=None, authentication=False, username='user', password='pass',
+                  listen_host='127.0.0.1', upstream_host=None):
     events = []
     stop = threading.Event()
 
@@ -119,7 +121,7 @@ def proxy_service(kind, tls=None, authentication=False):
                         name, separator, value = line.partition(b':')
                         if separator:
                             headers[name.lower()] = value.strip()
-                    if authentication and headers.get(b'proxy-authorization') != b'Basic ' + base64.b64encode(b'user:pass'):
+                    if authentication and headers.get(b'proxy-authorization') != b'Basic ' + base64.b64encode((username + ':' + password).encode()):
                         client.sendall(b'HTTP/1.1 407 Proxy Authentication Required\r\nContent-Length: 0\r\n\r\n')
                         return
                     host, port = request.split(b' ', 2)[1].decode().rsplit(':', 1)
@@ -137,8 +139,8 @@ def proxy_service(kind, tls=None, authentication=False):
                     if method == 2:
                         assert exact(client, 1) == b'\x01'
                         user = exact(client, exact(client, 1)[0])
-                        password = exact(client, exact(client, 1)[0])
-                        accepted = user == b'user' and password == b'pass'
+                        supplied_password = exact(client, exact(client, 1)[0])
+                        accepted = user == username.encode() and supplied_password == password.encode()
                         client.sendall(bytes([1, 0 if accepted else 1]))
                         if not accepted:
                             return
@@ -157,11 +159,15 @@ def proxy_service(kind, tls=None, authentication=False):
                     assert (version, command) == (4, 1)
                     port = int.from_bytes(exact(client, 2), 'big')
                     address = exact(client, 4)
-                    cstring(client)
+                    user_id = cstring(client)
+                    if authentication and user_id != username.encode():
+                        client.sendall(b'\x00\x5b\x00\x00\x00\x00\x00\x00')
+                        return
                     host = cstring(client).decode() if address[:3] == b'\0\0\0' and address[3] else socket.inet_ntoa(address)
                     reply = b'\x00\x5a\x00\x00\x00\x00\x00\x00'
                 events.append({'host': host, 'port': port, 'kind': kind, 'tls_proxy': bool(tls)})
-                upstream = socket.create_connection(('127.0.0.1' if host in ('remote.test', 'localhost', '::1') else host, port), timeout=3)
+                destination = upstream_host or ('127.0.0.1' if host in ('remote.test', 'localhost', '::1') else host)
+                upstream = socket.create_connection((destination, port), timeout=3)
                 client.sendall(reply)
                 tunnel(client, upstream)
             except (OSError, EOFError, AssertionError, ValueError):
@@ -171,7 +177,8 @@ def proxy_service(kind, tls=None, authentication=False):
                     upstream.close()
                 client.close()
 
-    server = QuietServer(('127.0.0.1', 0), Handler)
+    server_type = type('IPv6ProxyServer', (QuietServer,), {'address_family': socket.AF_INET6}) if ':' in listen_host else QuietServer
+    server = server_type((listen_host, 0), Handler)
     thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': 0.02}, daemon=True)
     thread.start()
     try:
@@ -184,7 +191,7 @@ def proxy_service(kind, tls=None, authentication=False):
 
 
 @contextlib.contextmanager
-def target_service(tls, source_payload=None):
+def target_service(tls, source_payload=None, listen_host='127.0.0.1'):
     events = []
 
     class Handler(BaseHTTPRequestHandler):
@@ -234,7 +241,8 @@ def target_service(tls, source_payload=None):
             except (OSError, ssl.SSLError):
                 pass
 
-    server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    server_type = type('IPv6TargetServer', (ThreadingHTTPServer,), {'address_family': socket.AF_INET6}) if ':' in listen_host else ThreadingHTTPServer
+    server = server_type((listen_host, 0), Handler)
     server.daemon_threads = True
     if tls is not None:
         server.socket = tls.wrap_socket(server.socket, server_side=True)

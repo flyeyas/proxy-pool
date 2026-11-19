@@ -153,3 +153,14 @@ def test_targeted_recheck_merges_duplicate_ids_and_keeps_target_demand(v2):
         time.sleep(0.02)
     assert data['result']['queued'] == 1
     assert repo.load(candidate.endpoint_id).pending_profiles == ['domestic']
+
+
+def test_store_failure_returns_503_instead_of_legacy_or_direct_fallback(v2, monkeypatch):
+    from redis.exceptions import ConnectionError
+    client, store = v2
+    def unavailable(*args, **kwargs):
+        raise ConnectionError('controlled test outage')
+    monkeypatch.setattr(store[0].redis, 'get', unavailable)
+    response = client.get('/api/v2/proxies/random/')
+    assert response.status_code == 503
+    assert response.json['data'] is None

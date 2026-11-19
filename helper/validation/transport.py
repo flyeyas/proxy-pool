@@ -122,7 +122,8 @@ def probe(candidate, variant, profile, policy, deadline=None, permit=None):
         tls = ssl.create_default_context(cafile=policy.target_ca or None)
         options = {'ssl_context': tls, 'retries': False, 'maxsize': 1, 'block': True}
         if variant.startswith('socks'):
-            manager = SOCKSProxyManager(candidate.proxy_url(variant, credentials=True), **options)
+            manager = SOCKSProxyManager(candidate.proxy_url(variant), username=candidate.username,
+                                        password=candidate.password, **options)
         else:
             # Proxy auth is sent only to the proxy, never as an origin header.
             proxy_headers = urllib3.make_headers(proxy_basic_auth='%s:%s' % (candidate.username, candidate.password or '')) if candidate.username is not None else None

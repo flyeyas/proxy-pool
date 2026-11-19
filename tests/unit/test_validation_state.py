@@ -250,6 +250,15 @@ def test_restriction_backoff_increases_and_success_resets_it():
     assert endpoint.variants['http']['targets']['overseas']['retry_at'] == 0
 
 
+def test_v2_ssdb_is_rejected_before_application_start(monkeypatch):
+    import helper.launcher as launcher
+    import helper.validation.config as config
+    monkeypatch.setattr(config, 'desired', lambda: {'mode': 'shadow'})
+    monkeypatch.setattr(launcher, 'ConfigHandler', lambda: SimpleNamespace(dbConn='ssdb://localhost:8888'))
+    with pytest.raises(SystemExit, match='Redis'):
+        getattr(launcher, '__beforeStart')()
+
+
 def test_unavailable_variant_cools_then_can_recover_without_harming_other_protocols():
     policy = ValidationPolicy()
     endpoint = ProxyEndpointV2.from_candidate(normalize_candidate({'proxy': 'x:7897', 'protocols': ['http', 'socks5']}), 0)

@@ -1,6 +1,8 @@
 """Real local protocol probes, including TLS-in-TLS and remote DNS."""
+import socket
 import time
 from dataclasses import replace
+from urllib.parse import quote
 
 import pytest
 
@@ -92,6 +94,60 @@ def test_tls_verification_is_not_disabled(certs):
         candidate = normalize_candidate('127.0.0.1:%d' % port)
         policy = replace(policy_for(target_port, ca), target_ca='')
         assert probe(candidate, 'http', 'domestic', policy).code == 'tls_invalid'
+
+
+def test_proxy_certificate_verification_is_independent(certs):
+    ca, tls = certs
+    with target_service(tls) as (target_port, requests), proxy_service('http', tls=tls) as (port, _):
+        candidate = normalize_candidate('127.0.0.1:%d' % port)
+        policy = replace(policy_for(target_port, ca), proxy_ca='')
+        result = probe(candidate, 'https', 'domestic', policy)
+        assert result.code == 'tls_invalid' and result.stage == 'proxy_tls'
+        assert requests == []
+
+
+@pytest.mark.parametrize('variant', ['socks4', 'socks4a'])
+def test_socks4_user_id_is_sent_without_claiming_password_auth(certs, variant):
+    ca, tls = certs
+    with target_service(tls) as (target_port, _), proxy_service('socks4', authentication=True) as (port, _):
+        candidate = normalize_candidate('%s://user@127.0.0.1:%d' % (variant, port), identity_key=b'x' * 32)
+        policy = policy_for(target_port, ca)
+        assert probe(candidate, variant, 'domestic', policy).passed
+        bad = normalize_candidate('%s://wrong@127.0.0.1:%d' % (variant, port), identity_key=b'x' * 32)
+        assert not probe(bad, variant, 'domestic', policy).passed
+        password = normalize_candidate('%s://user:pass@127.0.0.1:%d' % (variant, port), identity_key=b'x' * 32)
+        assert probe(password, variant, 'domestic', policy).code == 'unsupported'
+
+
+@pytest.mark.parametrize('variant', ['http', 'https', 'socks4', 'socks4a', 'socks5', 'socks5h'])
+def test_percent_encoded_proxy_credentials_are_decoded_once(certs, variant):
+    ca, tls = certs
+    user = 'user%40name'
+    password = 'pass:@/%word'
+    kind = 'http' if variant in ('http', 'https') else 'socks4' if variant.startswith('socks4') else 'socks5'
+    auth = quote(user, safe='')
+    if not variant.startswith('socks4'):
+        auth += ':' + quote(password, safe='')
+    with target_service(tls) as (target_port, targets), proxy_service(
+            kind, tls=tls if variant == 'https' else None, authentication=True,
+            username=user, password=password) as (port, _):
+        candidate = normalize_candidate('%s://%s@127.0.0.1:%d' % (variant, auth, port), identity_key=b'x' * 32)
+        assert probe(candidate, variant, 'domestic', policy_for(target_port, ca)).passed
+        assert targets[0]['proxy_authorization'] is None
+
+
+@pytest.mark.skipif(not socket.has_ipv6, reason='IPv6 loopback unavailable')
+@pytest.mark.parametrize('variant', ['socks5', 'socks5h'])
+def test_real_socks5_ipv6_proxy_and_target(certs, variant):
+    ca, tls = certs
+    with target_service(tls, listen_host='::1') as (target_port, targets), proxy_service(
+            'socks5', listen_host='::1', upstream_host='::1') as (port, events):
+        target = TargetPolicy('https://[::1]:%d/ok' % target_port, ('::1',), ('google',))
+        policy = ValidationPolicy(targets={'domestic': target, 'overseas': target},
+                                  target_ca=ca, retries=0)
+        candidate = normalize_candidate('%s://[::1]:%d' % (variant, port))
+        assert probe(candidate, variant, 'domestic', policy).passed
+        assert events[0]['host'] == '::1' and targets
 
 
 def test_exit_identity_uses_the_validated_proxy(certs):
