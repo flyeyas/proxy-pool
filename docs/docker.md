@@ -168,3 +168,9 @@ Dockerfile 中的 ENTRYPOINT 配置：
 ```dockerfile
 ENTRYPOINT ["tini", "--", "bash", "proxy_pool.sh", "start", "--fg"]
 ```
+
+## V2 影子升级
+
+V2 默认保留 legacy，先在隔离的本地 Docker 环境验收；配置、Token、日志与 Redis 数据卷保持持久化。镜像发布顺序为本地验收、推送 GitHub、测试门禁、版本标签、Actions 多架构构建，服务器按固定 digest 拉取。生产检测模式通过影子对照和迁移任务切换，不在运行容器内直接改 Python 文件。
+
+切换前备份旧镜像 digest、Redis 与旧代理 Hash。模式与数据投影原子切换，禁止清空 Redis 或重建 Redis 数据卷。回滚恢复旧池的原始空/非空状态；备份丢失时明确失败，不能假称已经恢复。详细流程见 [代理检测 V2](validation-v2.md)。

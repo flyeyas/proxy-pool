@@ -154,7 +154,7 @@ def get_html():
         try:
             return requests.get(
                 "http://www.example.com",
-                proxies={"http": "http://{}".format(proxy), "https": "https://{}".format(proxy)},
+                proxies={"http": "http://{}".format(proxy), "https": "http://{}".format(proxy)},
             )
         except requests.RequestException:
             retry_count -= 1

@@ -20,6 +20,8 @@ import sys
 import importlib
 import time
 from threading import Thread
+from threading import Lock
+from dataclasses import replace
 
 from helper.proxy import Proxy
 from helper.check import DoValidator
@@ -33,6 +35,7 @@ _logger = LogHandler("fetch")
 
 # 模块缓存: {module_name: (mtime, module)}
 _module_cache = {}
+_candidate_lock = Lock()
 
 
 def _get_sources_dir():
@@ -117,25 +120,46 @@ class _ThreadFetcher(Thread):
             fetcher = self.fetcher_class()
             with fetcherProxyContext(class_name):
                 for proxy in fetcher.fetch():
-                    self.log.info('ProxyFetch - %s: %s ok' % (fetcher_name, proxy.ljust(23)))
-                    proxy = proxy.strip()
-                    if proxy in self.proxy_dict:
-                        self.proxy_dict[proxy].add_source(fetcher_name)
-                    else:
-                        self.proxy_dict[proxy] = Proxy(
-                            proxy, source=fetcher_name)
+                    from helper.validation.normalize import normalize_candidate
+                    from helper.validation.config import identity_key
+                    try:
+                        candidate = normalize_candidate(proxy, source=fetcher_name,
+                            identity_key=identity_key() if '@' in str(proxy) else None)
+                    except ValueError:
+                        self.log.warning('ProxyFetch - %s: rejected malformed candidate', fetcher_name)
+                        continue
+                    self.log.info('ProxyFetch - %s: %s ok', fetcher_name, candidate.address)
+                    key = candidate.endpoint_id if candidate.credential_ref else candidate.address
+                    with _candidate_lock:
+                        if key in self.proxy_dict:
+                            existing = self.proxy_dict[key]
+                            existing.add_source(fetcher_name)
+                            previous = existing.validation_candidate
+                            hints = tuple(sorted(set(previous.country_hints + candidate.country_hints)))
+                            existing.validation_candidate = replace(previous,
+                                protocols=tuple(dict.fromkeys(previous.protocols + candidate.protocols)),
+                                sources=tuple(sorted(set(previous.sources + candidate.sources))),
+                                country='' if len(hints) > 1 else previous.country or candidate.country,
+                                country_hints=hints,
+                                explicit_scheme=previous.explicit_scheme or candidate.explicit_scheme)
+                        else:
+                            address = candidate.proxy_url('http', credentials=True).split('://', 1)[1]
+                            self.proxy_dict[key] = Proxy(address, source=fetcher_name,
+                                                       validation_candidate=candidate)
                     proxy_count += 1
         except Exception as e:
+            from helper.validation.events import redact
             self.log.error("ProxyFetch - {func}: error".format(func=fetcher_name))
-            self.log.error(str(e))
-            error = '%s: %s' % (type(e).__name__, e)
+            self.log.error(redact(str(e)))
+            error = '%s: %s' % (type(e).__name__, redact(str(e)))
         if not error and fetcher is not None:
             fetcher_error = getattr(fetcher, 'last_error', None)
             if isinstance(fetcher_error, str):
                 error = fetcher_error
         # 抓取结果上报: 异常或零产出视为失败, 连续失败达到阈值自动禁用
         ok = proxy_count > 0
-        error = error or ('' if ok else '抓取产出 0 条代理')
+        from helper.validation.events import redact
+        error = redact(error or ('' if ok else '抓取产出 0 条代理'))
         stat = recordFetchResult(class_name, ok, error=error,
                                  auto_disable_fails=self.conf.fetcherAutoDisableFails)
         log_result = self.log.info if ok else self.log.warning
@@ -178,7 +202,7 @@ class Fetcher(object):
             thread_list.append(_ThreadFetcher(fetcher_class, proxy_dict))
 
         for thread in thread_list:
-            thread.setDaemon(True)
+            thread.daemon = True
             thread.start()
 
         for thread in thread_list:
@@ -186,5 +210,6 @@ class Fetcher(object):
 
         self.log.info("ProxyFetch - all complete!")
         for _ in proxy_dict.values():
-            if DoValidator.preValidator(_.proxy):
+            from helper.validation.service import mode
+            if mode() != 'legacy' or DoValidator.preValidator(_.proxy):
                 yield _

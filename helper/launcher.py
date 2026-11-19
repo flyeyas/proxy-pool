@@ -34,6 +34,9 @@ def startScheduler():
 
 
 def __beforeStart():
+    from helper.validation.config import desired
+    if desired()['mode'] != 'legacy' and not ConfigHandler().dbConn.startswith(('redis://', 'rediss://')):
+        raise SystemExit('Validation V2 requires Redis; use legacy mode for SSDB')
     __showVersion()
     __showConfigure()
     if __checkDBConfig():

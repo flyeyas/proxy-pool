@@ -1,6 +1,11 @@
 <script setup>
 // 接口说明文档(静态内容, 与后端路由保持同步)
 const endpoints = [
+  { method: 'GET', path: '/api/v2/proxies/', desc: 'V2 分页代理、协议和目标检测证据', params: 'protocol、dns_mode、profile、region、status、cursor、page_size；诊断状态需管理员会话' },
+  { method: 'GET', path: '/api/v2/proxies/random/', desc: '获取完整代理 URL，区分连接协议和 HTTPS 能力', params: 'protocol=http|https|socks4|socks5；profile=domestic|overseas' },
+  { method: 'POST', path: '/api/v2/proxies/pop/', desc: '原子获取并删除 V2 endpoint', params: '同 random；不会把 SOCKS 代理作为 HTTP 地址返回' },
+  { method: 'GET', path: '/api/v2/validation/status/', desc: 'V2 协调器、队列、目标健康和策略版本', params: '' },
+  { method: 'PATCH', path: '/api/v2/validation/config/', desc: '管理员修改 V2 配置；生产切换走迁移任务', params: 'mode=shadow 或 policy 对象；环境变量锁定项只读' },
   { method: 'GET', path: '/get/', desc: '随机获取一个代理（池空返回 404）', params: '?type=https 筛选 HTTPS；?region=US 按地区筛选（逗号分隔如 US,HK，大小写不敏感）' },
   { method: 'GET', path: '/pop/', desc: '获取并删除一个代理（池空返回 404）', params: '同 /get/' },
   { method: 'GET', path: '/all/', desc: '获取所有代理，data 为 {"count": N, "proxies": [...]}', params: '同 /get/' },

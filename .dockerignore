@@ -17,5 +17,6 @@ __pycache__
 *.pyc.*
 .pytest_cache
 .coverage
+.coverage.*
 htmlcov
 .webui-online.json

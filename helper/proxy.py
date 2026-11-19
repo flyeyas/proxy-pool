@@ -18,7 +18,8 @@ import json
 class Proxy(object):
 
     def __init__(self, proxy, fail_count=0, region="", anonymous="",
-                 source="", check_count=0, last_status="", last_time="", https=False):
+                 source="", check_count=0, last_status="", last_time="", https=False,
+                 validation_candidate=None):
         self._proxy = proxy
         self._fail_count = fail_count
         self._region = region
@@ -28,6 +29,10 @@ class Proxy(object):
         self._last_status = last_status
         self._last_time = last_time
         self._https = https
+        if isinstance(validation_candidate, dict):
+            from helper.validation.models import ProxyCandidate
+            validation_candidate = ProxyCandidate(**validation_candidate)
+        self.validation_candidate = validation_candidate
 
     @classmethod
     def createFromJson(cls, proxy_json):
@@ -40,7 +45,8 @@ class Proxy(object):
                    check_count=_dict.get("check_count", 0),
                    last_status=_dict.get("last_status", ""),
                    last_time=_dict.get("last_time", ""),
-                   https=_dict.get("https", False)
+                   https=_dict.get("https", False),
+                   validation_candidate=_dict.get('validation_candidate')
                    )
 
     @property
@@ -91,7 +97,7 @@ class Proxy(object):
     @property
     def to_dict(self):
         """ 属性字典 """
-        return {"proxy": self.proxy,
+        data = {"proxy": self.proxy,
                 "https": self.https,
                 "fail_count": self.fail_count,
                 "region": self.region,
@@ -100,6 +106,9 @@ class Proxy(object):
                 "check_count": self.check_count,
                 "last_status": self.last_status,
                 "last_time": self.last_time}
+        if self.validation_candidate is not None:
+            data['validation_candidate'] = self.validation_candidate.public_dict()
+        return data
 
     @property
     def to_json(self):

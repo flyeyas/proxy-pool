@@ -30,6 +30,8 @@ class GeonodeFetcher(BaseFetcher):
     url = "https://geonode.com/"
 
     def fetch(self):
+        from helper.validation.service import mode
+        structured = mode() != 'legacy'
         self.last_error = None
         url = ("https://proxylist.geonode.com/api/proxy-list?"
                "page=1&limit=500&sort_by=responseTime&sort_type=asc")
@@ -78,16 +80,25 @@ class GeonodeFetcher(BaseFetcher):
                     if not isinstance(protocols, (list, tuple, set)):
                         protocols = []
                     protocols = {str(protocol).strip().lower() for protocol in protocols}
-                    if not protocols.intersection({'http', 'https'}):
+                    supported = {'http', 'https', 'socks4', 'socks4a', 'socks5', 'socks5h'} if structured else {'http', 'https'}
+                    if not protocols.intersection(supported):
                         unsupported += 1
                         continue
                     ip, port = item.get('ip'), item.get('port')
                     if not ip or not port:
                         malformed += 1
                         continue
-                    proxies.append('%s:%s' % (ip, port))
-                unique = list(self.yieldUniqueProxies(proxies))
-                logger.info('ProxyFetch - geonode: response status=%s content_type=%s body_bytes=%d total=%s records=%d http_candidates=%d emitted=%d unsupported_protocols=%d malformed=%d elapsed=%.2fs',
+                    if structured:
+                        proxies.append({'host': ip, 'port': port,
+                                        'protocols': sorted(protocols.intersection(supported)),
+                                        'country': item.get('country', ''), 'source': self.name})
+                    else:
+                        proxies.append('%s:%s' % (ip, port))
+                if structured:
+                    unique = list({(str(p['host']), str(p['port']), tuple(p['protocols'])): p for p in proxies}.values())
+                else:
+                    unique = list(self.yieldUniqueProxies(proxies))
+                logger.info('ProxyFetch - geonode: response status=%s content_type=%s body_bytes=%d total=%s records=%d candidates=%d emitted=%d unsupported_protocols=%d malformed=%d elapsed=%.2fs',
                             status if status is not None else 'unknown',
                             content_type or 'unknown', body_bytes, payload.get('total', 'unknown'),
                             len(records), len(proxies), len(unique), unsupported, malformed,

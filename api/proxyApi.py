@@ -30,6 +30,7 @@ from handler.proxyHandler import ProxyHandler
 from handler.configHandler import ConfigHandler
 from api.response import apiOk, apiError
 from api.webuiApi import webui_bp
+from api.validationApi import validation_bp
 
 app = Flask(__name__)
 conf = ConfigHandler()
@@ -47,11 +48,26 @@ class JsonResponse(Response):
 
 app.response_class = JsonResponse  # type: ignore # Flask 官方支持的响应类替换方式, 类型桩未覆盖
 app.register_blueprint(webui_bp)
+app.register_blueprint(validation_bp)
 
 # WebUI 登录会话签名密钥: 优先环境变量; 未设置时由账号密码派生,
 # 保证 gunicorn 多 worker 下各进程密钥一致(登录态不丢失)
 app.secret_key = os.getenv('WEBUI_SECRET_KEY') or hashlib.sha256(
     ('proxy_pool_webui:%s:%s' % (conf.webuiUsername, conf.webuiPassword)).encode()).hexdigest()
+
+
+from helper.validation.service import TransitionInProgress
+from redis.exceptions import RedisError
+
+
+@app.errorhandler(TransitionInProgress)
+def transition_in_progress(exc):
+    return apiError(409, 'validation transition in progress')
+
+
+@app.errorhandler(RedisError)
+def redis_unavailable(exc):
+    return apiError(503, 'proxy store unavailable')
 
 @app.route('/')
 def index():

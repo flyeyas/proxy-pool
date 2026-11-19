@@ -25,6 +25,7 @@ import time
 
 from handler.logHandler import LogHandler
 from helper.fetcherProxy import getCurrentFetcherProxyRoute
+from helper.validation.events import redact
 
 urllib3.disable_warnings()
 
@@ -91,10 +92,10 @@ class WebRequest(object):
                 self.last_error = None
                 return self
             except Exception as e:
-                self.last_error = '%s: %s' % (type(e).__name__, e)
+                self.last_error = '%s: %s' % (type(e).__name__, redact(str(e)))
                 if route is not None:
                     route.failed(url)
-                self.log.error("requests: %s error: %s" % (url, str(e)))
+                self.log.error("requests: %s error: %s" % (redact(url), redact(str(e))))
                 retry_time -= 1
                 if retry_time <= 0:
                     resp = Response()
@@ -128,10 +129,10 @@ class WebRequest(object):
                 self.last_error = None
                 return self
             except Exception as e:
-                self.last_error = '%s: %s' % (type(e).__name__, e)
+                self.last_error = '%s: %s' % (type(e).__name__, redact(str(e)))
                 if route is not None:
                     route.failed(url)
-                self.log.error("requests: %s error: %s" % (url, str(e)))
+                self.log.error("requests: %s error: %s" % (redact(url), redact(str(e))))
                 retry_time -= 1
                 if retry_time <= 0:
                     resp = Response()
@@ -156,5 +157,5 @@ class WebRequest(object):
         try:
             return self.response.json()
         except Exception as e:
-            self.log.error(str(e))
+            self.log.error(redact(str(e)))
             return {}

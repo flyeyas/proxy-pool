@@ -35,6 +35,9 @@ class ProxyHandler(object):
             region: 地区筛选(如 "US" / "us,hk"), None 不筛选
         Returns:
         """
+        from helper.validation.service import mode, legacy_get
+        if mode() == 'active':
+            return legacy_get(region)
         proxy = self.db.get(https, region)
         return Proxy.createFromJson(proxy) if proxy else None
 
@@ -45,6 +48,20 @@ class ProxyHandler(object):
             region: 地区筛选(如 "US" / "us,hk"), None 不筛选
         :return:
         """
+        from helper.validation.service import (mode, legacy_get, legacy_writer,
+                                               legacy_delete, TransitionInProgress)
+        current_mode = mode()
+        if current_mode == 'active':
+            return legacy_get(region, consume=True)
+        if current_mode == 'shadow':
+            with legacy_writer() as allowed:
+                if not allowed:
+                    raise TransitionInProgress('validation transition in progress')
+                raw = self.db.pop(https, region)
+                proxy = Proxy.createFromJson(raw) if raw else None
+                if proxy:
+                    legacy_delete(proxy)
+                return proxy
         proxy = self.db.pop(https, region)
         if proxy:
             return Proxy.createFromJson(proxy)
@@ -55,7 +72,10 @@ class ProxyHandler(object):
         put proxy into use proxy
         :return:
         """
-        self.db.put(proxy)
+        from helper.validation.service import mode, repository
+        if mode() != 'legacy':
+            return repository().guarded_legacy_put(proxy)
+        return self.db.put(proxy)
 
     def delete(self, proxy):
         """
@@ -63,6 +83,16 @@ class ProxyHandler(object):
         :param proxy:
         :return:
         """
+        from helper.validation.service import mode, legacy_delete, legacy_writer, TransitionInProgress
+        current_mode = mode()
+        if current_mode == 'active':
+            return legacy_delete(proxy)
+        if current_mode == 'shadow':
+            with legacy_writer() as allowed:
+                if not allowed:
+                    raise TransitionInProgress('validation transition in progress')
+                legacy_delete(proxy)
+                return self.db.delete(proxy.proxy)
         return self.db.delete(proxy.proxy)
 
     def getAll(self, https=False, region=None):
@@ -72,6 +102,9 @@ class ProxyHandler(object):
             region: 地区筛选(如 "US" / "us,hk"), None 不筛选
         :return:
         """
+        from helper.validation.service import mode, legacy_all
+        if mode() == 'active':
+            return legacy_all(region)
         proxies = self.db.getAll(https, region)
         return [Proxy.createFromJson(_) for _ in proxies]
 
