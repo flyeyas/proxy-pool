@@ -8,6 +8,27 @@ from .normalize import normalize_candidate
 from .repository import encode
 
 
+_COMPLETED_MAIN_RESULTS = frozenset((
+    'available', 'target_restricted', 'auth_required', 'auth_failed', 'tls_invalid',
+    'proxy_connect_failed', 'protocol_error', 'read_timeout', 'transport_error',
+    'target_http_error', 'content_inconclusive', 'redirect_limit', 'custom_rejected',
+    'deadline_exceeded',
+))
+
+
+def _has_completed_main_target(endpoint, policy):
+    profiles = set(policy.profiles_for(endpoint.country))
+    for variant in endpoint.variants.values():
+        for profile, result in variant.get('targets', {}).items():
+            if profile not in profiles or not isinstance(result, dict):
+                continue
+            code = result.get('code')
+            if (result.get('policy_version') == policy.version and isinstance(code, str)
+                    and code in _COMPLETED_MAIN_RESULTS):
+                return True
+    return False
+
+
 def _import_legacy(repo, policy):
     imported, rejected, capacity_rejected = 0, 0, 0
     legacy_ids = set()
@@ -41,9 +62,7 @@ def _activation_coverage(repo, policy, minimum):
     while True:
         endpoints, cursor, _ = repo.page(cursor, 200)
         for endpoint in endpoints:
-            tested = any(r.get('policy_version') == policy.version and r.get('code') not in
-                         ('deferred', 'environment_error', 'unsupported')
-                         for variant in endpoint.variants.values() for r in variant.get('targets', {}).values())
+            tested = _has_completed_main_target(endpoint, policy)
             completed += int(tested)
             pending += int(not tested)
             legacy_completed += int(tested and endpoint.endpoint_id in legacy_ids)
