@@ -19,7 +19,7 @@ const formInitialized = ref(false)
 const form = ref({ workers: 4, target_rps: 2, connect_timeout: 3, read_timeout: 5, round_deadline: 30 })
 const labels = { workers: '检测并发', target_rps: '每站每秒请求数', connect_timeout: '连接超时（秒）',
   read_timeout: '读取超时（秒）', round_deadline: '整轮截止（秒）' }
-const filter = ref({ protocol: '', profile: '', status: 'all', region: '' })
+const filter = ref({ protocol: '', profile: '', status: 'all', region: '', max_latency_ms: '' })
 const configured = computed(() => config.value?.mode !== 'legacy')
 const effectiveMode = computed(() => status.value.mode || 'legacy')
 
@@ -128,8 +128,9 @@ function routes(record) {
         <button class="btn" :disabled="busy" @click="polling.run">刷新状态</button>
         <button class="btn" @click="beginEdit">读取当前参数</button>
       </div>
-      <p>国内：HTTPS 腾讯；国外：HTTPS Google。地区未知时分别检测，不能依据网站可达性猜测国家。</p>
+      <p>国内：{{ config?.policy?.targets?.domestic?.url || 'HTTPS 腾讯' }}；国外：{{ config?.policy?.targets?.overseas?.url || 'HTTPS Google' }}。地区未知时分别检测，不能依据网站可达性猜测国家。</p>
       <p>目标状态：国内 {{ status.targets?.domestic || 'unknown' }} ／ 国外 {{ status.targets?.overseas || 'unknown' }}</p>
+      <p v-if="status.oldest_due_delay > 300" class="flash">待测任务已积压超过 5 分钟。两分钟是调度间隔，实际完成速度取决于代理响应和检测资源。</p>
       <p class="mono">期望版本：{{ config?.config_version || '—' }} ／ 生效版本：{{ status.effective_version || '—' }}</p>
       <div class="toolbar" style="flex-wrap: wrap">
         <label v-for="(value, key) in form" :key="key" style="display: grid; gap: 6px">
@@ -151,8 +152,9 @@ function routes(record) {
         <h3 class="card-title" style="margin: 0">V2 代理与检测证据</h3>
         <select v-model="filter.protocol"><option value="">全部连接协议</option><option>http</option><option>https</option><option>socks4</option><option>socks5</option></select>
         <select v-model="filter.profile"><option value="">默认地区目标</option><option value="domestic">国内目标</option><option value="overseas">国外目标</option></select>
-        <select v-model="filter.status"><option v-for="state in ['all', 'available', 'pending', 'suspect', 'target_restricted', 'tls_invalid', 'stale', 'http_only', 'unavailable']" :key="state">{{ state }}</option></select>
+        <select v-model="filter.status"><option v-for="state in ['all', 'available', 'pending', 'suspect', 'target_restricted', 'auth_required', 'auth_failed', 'tls_invalid', 'content_inconclusive', 'stale', 'http_only', 'unavailable']" :key="state">{{ state }}</option></select>
         <input v-model="filter.region" placeholder="地区码，如 CN、US" style="width: 150px" />
+        <input v-model.number="filter.max_latency_ms" type="number" min="0" step="1" placeholder="最大耗时（毫秒）" aria-label="最大耗时（毫秒）" style="width: 150px" />
         <button class="btn" :disabled="busy || !configured" @click="applyFilter">筛选</button>
       </div>
       <p v-if="!configured">当前为旧版检测。启用影子模式后可对照新规则，不会立即切换生产代理接口。</p>
