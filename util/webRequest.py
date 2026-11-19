@@ -10,6 +10,7 @@
                    2017/7/31:
                    2026/10/29: 修复 get() 重试耗尽时未赋值 self.response; 更新 UA 列表为现代浏览器
                    2026/11/12: 采集上下文代理选择和带 Cookie 的 session 请求
+                   2026/11/18: 保存最后请求异常并在成功后清除
 -------------------------------------------------
 """
 # pyright: reportAttributeAccessIssue=false
@@ -35,6 +36,7 @@ class WebRequest(object):
         self.log = LogHandler(self.name, file=False)
         self.response = Response()
         self.session = session
+        self.last_error = None
 
     @property
     def user_agent(self):
@@ -86,8 +88,10 @@ class WebRequest(object):
                     request_kwargs['proxies'] = route.proxiesFor(url)
                 get = self.session.get if self.session is not None else requests.get
                 self.response = get(url, headers=headers, timeout=timeout, *args, **request_kwargs)
+                self.last_error = None
                 return self
             except Exception as e:
+                self.last_error = '%s: %s' % (type(e).__name__, e)
                 if route is not None:
                     route.failed(url)
                 self.log.error("requests: %s error: %s" % (url, str(e)))
@@ -121,8 +125,10 @@ class WebRequest(object):
                     request_kwargs['proxies'] = route.proxiesFor(url)
                 post = self.session.post if self.session is not None else requests.post
                 self.response = post(url, headers=headers, timeout=timeout, *args, **request_kwargs)
+                self.last_error = None
                 return self
             except Exception as e:
+                self.last_error = '%s: %s' % (type(e).__name__, e)
                 if route is not None:
                     route.failed(url)
                 self.log.error("requests: %s error: %s" % (url, str(e)))

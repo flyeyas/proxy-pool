@@ -10,6 +10,7 @@
                    2019/08/06: 多线程采集
                    2026/05/31: 重构为动态加载 fetcher 插件
                    2026/11/12: 按采集源配置使用已验证代理
+                   2026/11/18: 按来源选择采集并记录结果、耗时和诊断原因
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -17,11 +18,12 @@ __author__ = 'JHao'
 import os
 import sys
 import importlib
+import time
 from threading import Thread
 
 from helper.proxy import Proxy
 from helper.check import DoValidator
-from helper.fetcherConfig import getEffectiveExclude, recordFetchResult
+from helper.fetcherConfig import getAutoDisable, getEffectiveExclude, recordFetchResult
 from helper.fetcherProxy import fetcherProxyContext
 from handler.logHandler import LogHandler
 from handler.configHandler import ConfigHandler
@@ -106,12 +108,15 @@ class _ThreadFetcher(Thread):
     def run(self):
         fetcher_name = self.fetcher_class.name
         class_name = self.fetcher_class.__name__
+        started = time.monotonic()
         self.log.info("ProxyFetch - {func}: start".format(func=fetcher_name))
         proxy_count = 0
         error = ''
+        fetcher = None
         try:
+            fetcher = self.fetcher_class()
             with fetcherProxyContext(class_name):
-                for proxy in self.fetcher_class().fetch():
+                for proxy in fetcher.fetch():
                     self.log.info('ProxyFetch - %s: %s ok' % (fetcher_name, proxy.ljust(23)))
                     proxy = proxy.strip()
                     if proxy in self.proxy_dict:
@@ -124,11 +129,21 @@ class _ThreadFetcher(Thread):
             self.log.error("ProxyFetch - {func}: error".format(func=fetcher_name))
             self.log.error(str(e))
             error = '%s: %s' % (type(e).__name__, e)
+        if not error and fetcher is not None:
+            fetcher_error = getattr(fetcher, 'last_error', None)
+            if isinstance(fetcher_error, str):
+                error = fetcher_error
         # 抓取结果上报: 异常或零产出视为失败, 连续失败达到阈值自动禁用
         ok = proxy_count > 0
-        recordFetchResult(class_name, ok,
-                          error=error if error else ('' if ok else '抓取产出 0 条代理'),
-                          auto_disable_fails=self.conf.fetcherAutoDisableFails)
+        error = error or ('' if ok else '抓取产出 0 条代理')
+        stat = recordFetchResult(class_name, ok, error=error,
+                                 auto_disable_fails=self.conf.fetcherAutoDisableFails)
+        log_result = self.log.info if ok else self.log.warning
+        log_result('ProxyFetch - %s: result=%s yielded=%d elapsed=%.2fs consecutive_failures=%d auto_disabled=%s%s',
+                      fetcher_name, 'success' if ok else 'failure', proxy_count,
+                      time.monotonic() - started, stat.get('fails', 0),
+                      class_name in getAutoDisable(),
+                      ' reason=%s' % error if error else '')
 
 
 class Fetcher(object):
@@ -138,9 +153,9 @@ class Fetcher(object):
         self.log = LogHandler(self.name)
         self.conf = ConfigHandler()
 
-    def run(self):
+    def run(self, fetcher_names=None, exclude_fetcher_names=None):
         """
-        fetch proxy with fetcher plugins
+        按类名选择/排除采集源; 不传参数时采集全部已启用来源。
         :return:
         """
         proxy_dict = dict()
@@ -150,6 +165,13 @@ class Fetcher(object):
         # 黑名单 = setting.py 静态配置 + 运行时手动/自动禁用(热生效, 每轮抓取前读取)
         exclude_list = list(set(self.conf.fetcherExclude) | set(getEffectiveExclude()))
         fetcher_classes = _discover_fetchers(exclude_list)
+        if fetcher_names is not None:
+            fetcher_names = set(fetcher_names)
+            fetcher_classes = [cls for cls in fetcher_classes if cls.__name__ in fetcher_names]
+        if exclude_fetcher_names:
+            exclude_fetcher_names = set(exclude_fetcher_names)
+            fetcher_classes = [cls for cls in fetcher_classes
+                               if cls.__name__ not in exclude_fetcher_names]
         self.log.info("ProxyFetch : active fetchers [%s]" % ", ".join(c.name for c in fetcher_classes))
 
         for fetcher_class in fetcher_classes:

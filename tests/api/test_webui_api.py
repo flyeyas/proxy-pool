@@ -113,7 +113,7 @@ class TestSchedulerStatus:
         data = response.get_json()['data']
         assert data['status'] == 'not_started'
         assert data['online'] is False
-        assert len(data['jobs']) == 3
+        assert len(data['jobs']) == 4
         assert response.headers['Cache-Control'] == 'no-store'
         assert not status_file.exists()
 

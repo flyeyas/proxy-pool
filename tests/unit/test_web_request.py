@@ -53,6 +53,15 @@ class TestWebRequestGet:
 
     @patch("util.webRequest.time.sleep")
     @patch("util.webRequest.requests.get")
+    def test_retry_success_clears_previous_error(self, mock_get, mock_sleep):
+        mock_get.side_effect = [TimeoutError('first attempt'), _mock_response(200, 'ok')]
+        result = WebRequest().get('http://example.com', retry_time=2, retry_interval=0)
+        assert result.text == 'ok'
+        assert result.last_error is None
+        assert mock_get.call_count == 2
+
+    @patch("util.webRequest.time.sleep")
+    @patch("util.webRequest.requests.get")
     def test_custom_header_merge(self, mock_get, mock_sleep):
         """自定义 header 合并到默认 header"""
         mock_get.return_value = _mock_response(200)
@@ -66,14 +75,13 @@ class TestWebRequestGet:
     @patch("util.webRequest.time.sleep")
     @patch("util.webRequest.requests.get")
     def test_retry_exhaustion(self, mock_get, mock_sleep):
-        """全部失败 -> 返回 fallback（注意 get() 的 bug: 未赋值 self.response）"""
+        """全部失败 -> 返回兼容响应, 同时保留最终请求异常"""
         mock_get.side_effect = TimeoutError("timeout")
         wr = WebRequest()
         result = wr.get("http://example.com", retry_time=2, retry_interval=0, timeout=1)
 
         assert result is wr
-        # 注意：get() 在 retry 耗尽时创建了 resp 但未赋值给 self.response
-        # 所以 self.response 仍为初始的空 Response
+        assert wr.last_error == 'TimeoutError: timeout'
         assert mock_get.call_count == 2
 
 
@@ -90,6 +98,7 @@ class TestWebRequestPost:
 
         assert result is wr
         assert wr.response.status_code == 200
+        assert wr.last_error is None
         assert wr.text == "posted"
 
     @patch("util.webRequest.time.sleep")
@@ -115,6 +124,7 @@ class TestWebRequestPost:
         assert result is wr
         # post() 正确赋值 self.response = resp
         assert wr.response.status_code == 200
+        assert wr.last_error == 'TimeoutError: timeout'
         assert mock_post.call_count == 2
 
 

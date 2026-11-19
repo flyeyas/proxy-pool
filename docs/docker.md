@@ -4,9 +4,36 @@
 
 构建并运行自己的镜像：
 
+GitHub Actions 发布的 `ghcr.io/flyeyas/proxy-pool:1.5.0` 镜像同时支持 `linux/amd64` 与 `linux/arm64`，Docker 拉取时按运行主机架构选择。自定义本地构建默认使用本机架构。
+
 ```console
 docker build -t flyeyas/proxy-pool:latest .
+```
 
+Node 与 Python 基础镜像默认分别为 `node:26-alpine` 和 `python:3.13-alpine`，Redis 服务使用 `redis:8-alpine`。网络环境需要镜像加速时，可通过 `NODE_BASE_IMAGE` 和 `PYTHON_BASE_IMAGE` 构建参数指定同架构基础镜像仓库。
+
+例如，通过 Google 的 Docker Hub 缓存构建本地镜像：
+
+```console
+docker build \
+  --build-arg NODE_BASE_IMAGE=mirror.gcr.io/library/node:26-alpine \
+  --build-arg PYTHON_BASE_IMAGE=mirror.gcr.io/library/python:3.13-alpine \
+  -t proxy-pool:local .
+```
+
+以下仓库在 2026-11-18 的本地环境中完成了实际拉取验证：
+
+| 仓库 | 镜像路径示例 | 本次验证 |
+| --- | --- | --- |
+| Google Docker Hub 缓存 | `mirror.gcr.io/library/node:26-alpine` | Node 26、Python 3.13、Redis 8，已用于本地构建/测试 |
+| DaoCloud | `m.daocloud.io/docker.io/library/alpine:3.20` | Alpine 镜像拉取成功 |
+| DaoCloud 兼容域名 | `docker.m.daocloud.io/library/alpine:3.20` | Alpine 镜像拉取成功 |
+| DockerProxy | `dockerproxy.net/library/alpine:3.20` | Alpine 镜像拉取成功 |
+| AWS ECR Public | `public.ecr.aws/docker/library/redis:8-alpine` | Redis 8 拉取成功；Node 拉取较慢 |
+
+仓库的可达性和镜像缓存会变化，应以目标标签实际拉取结果为准。Google 当前可用的构建命令见上例；不要将某个仓库中的镜像路径直接套用到另一个仓库。Docker Desktop 的镜像拉取由守护进程完成，终端的 `all_proxy` 不会自动配置守护进程代理。
+
+```console
 docker run -d --name proxy_pool \
   --env DB_CONN=redis://:password@ip:port/0 \
   --env WEBUI_PASSWORD=change-me \
@@ -22,6 +49,8 @@ docker run -d --name proxy_pool \
 - `WEBUI_USERNAME` / `WEBUI_PASSWORD`：WebUI 登录账号
 - `FETCHER_AUTO_DISABLE_FAILS`：代理源连续失败自动禁用阈值
 - `RUNTIME_CONFIG_FILE`：运行时配置文件路径，镜像默认 `/app/data/runtime_config.json`。Compose 固定为该路径，与 `runtime_data` 数据卷对应；本地直接运行默认仍是项目根目录的 `runtime_config.json`。
+
+构建参数 `NODE_BASE_IMAGE` / `PYTHON_BASE_IMAGE` 分别控制前端构建和 Python 运行阶段的基础镜像，运行时环境变量不会更改镜像内的版本。
 
 `/app/data` 保存 API Token、代理源启停/代理开关和采集统计。上例使用命名卷 `proxy_pool_runtime`，后续创建容器时挂载同一卷即可继续使用原配置；首次运行无需手动创建 JSON 文件。也可用 `-v /宿主机数据目录:/app/data` 保存到宿主机目录。
 

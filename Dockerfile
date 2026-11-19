@@ -1,5 +1,8 @@
+ARG NODE_BASE_IMAGE=node:26-alpine
+ARG PYTHON_BASE_IMAGE=python:3.13-alpine
+
 # ---------- build webui ----------
-FROM node:25-alpine AS webui-builder
+FROM ${NODE_BASE_IMAGE} AS webui-builder
 
 WORKDIR /webui
 
@@ -12,7 +15,7 @@ COPY webui/ ./
 RUN npm run build
 
 # ---------- runtime ----------
-FROM python:3.13-alpine
+FROM ${PYTHON_BASE_IMAGE}
 
 LABEL org.opencontainers.image.authors="flyeyas" \
       org.opencontainers.image.source="https://github.com/flyeyas/proxy-pool" \

@@ -14,6 +14,7 @@ __author__ = 'JHao'
 
 import re
 from unittest.mock import patch, MagicMock
+from types import SimpleNamespace
 
 from lxml import etree
 
@@ -157,21 +158,70 @@ class TestGoodipsFetcher(object):
 
 class TestGeonodeFetcher(object):
 
+    @staticmethod
+    def _set_response(mock_wr, json_data, text='', status=200, content_type='application/json'):
+        result = _make_response(text=text, json_data=json_data)
+        result.last_error = None
+        body = text.encode() if text else b'{}'
+        result.response = SimpleNamespace(
+            status_code=status, headers={'Content-Type': content_type},
+            content=body, request=object())
+        mock_wr.return_value.get.return_value = result
+        return result
+
     @patch("fetcher.sources.geonode.WebRequest")
     def test_fetch_json(self, mock_wr):
         from fetcher.sources.geonode import GeonodeFetcher
-        json_data = {"data": [{"ip": "1.2.3.4", "port": "8080"}]}
-        mock_wr.return_value.get.return_value = _make_response(json_data=json_data)
+        json_data = {"data": [{"ip": "1.2.3.4", "port": "8080", "protocols": ["http"]}]}
+        self._set_response(mock_wr, json_data)
         result = list(GeonodeFetcher().fetch())
         assert "1.2.3.4:8080" in result
 
     @patch("fetcher.sources.geonode.WebRequest")
     def test_fetch_text_fallback(self, mock_wr):
         from fetcher.sources.geonode import GeonodeFetcher
-        mock_wr.return_value.get.return_value = _make_response(
-            json_data={}, text="1.2.3.4:8080")
+        self._set_response(mock_wr, {}, text="1.2.3.4:8080", content_type='text/plain')
         result = list(GeonodeFetcher().fetch())
         assert "1.2.3.4:8080" in result
+
+    @patch("fetcher.sources.geonode.logger")
+    @patch("fetcher.sources.geonode.WebRequest")
+    def test_filters_protocols_the_pool_cannot_use(self, mock_wr, mock_logger):
+        from fetcher.sources.geonode import GeonodeFetcher
+        json_data = {"data": [
+            {"ip": "1.2.3.4", "port": 8080, "protocols": ["http"]},
+            {"ip": "5.6.7.8", "port": 443, "protocols": ["https"]},
+            {"ip": "9.8.7.6", "port": 1080, "protocols": ["socks5"]},
+            {"ip": "6.7.8.9", "port": 1080, "protocols": ["socks4"]},
+        ]}
+        self._set_response(mock_wr, json_data)
+        result = list(GeonodeFetcher().fetch())
+        assert result == ["1.2.3.4:8080", "5.6.7.8:443"]
+        summary = next(call.args[0] for call in mock_logger.info.call_args_list
+                       if call.args and 'unsupported_protocols=%d' in call.args[0])
+        assert 'unsupported_protocols=%d' in summary
+
+    @patch("fetcher.sources.geonode.logger")
+    @patch("fetcher.sources.geonode.WebRequest")
+    def test_logs_upstream_http_errors_without_parsing_error_body(self, mock_wr, mock_logger):
+        from fetcher.sources.geonode import GeonodeFetcher
+        self._set_response(mock_wr, {"message": "rate limited"},
+                           text='1.2.3.4:8080', status=429)
+        fetcher = GeonodeFetcher()
+        assert list(fetcher.fetch()) == []
+        assert fetcher.last_error == 'HTTP 429'
+        assert any('HTTP %d' in call.args[0] for call in mock_logger.warning.call_args_list)
+
+    @patch("fetcher.sources.geonode.logger")
+    @patch("fetcher.sources.geonode.WebRequest")
+    def test_preserves_retry_exhaustion_reason(self, mock_wr, mock_logger):
+        from fetcher.sources.geonode import GeonodeFetcher
+        result = self._set_response(mock_wr, {}, text='')
+        result.last_error = 'Timeout: upstream timed out'
+        fetcher = GeonodeFetcher()
+        assert list(fetcher.fetch()) == []
+        assert 'Timeout' in fetcher.last_error
+        mock_logger.warning.assert_called_once()
 
 
 class TestKuaidailiFetcher(object):

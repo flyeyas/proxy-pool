@@ -12,6 +12,7 @@
                    2026/10/29: 移除 six 兼容层
                    2026/11/11: 启动与每小时整点清理七天以前的日志
                    2026/11/12: 向 WebUI 提供调度器心跳与任务执行状态
+                   2026/11/18: Geonode 独立每 15 分钟采集
 -------------------------------------------------
 """
 __author__ = 'JHao'
@@ -29,10 +30,19 @@ from helper.schedulerStatus import SCHEDULED_JOBS, SchedulerMonitor
 
 
 def __runProxyFetch():
+    return __runFetchers(exclude_fetcher_names={'GeonodeFetcher'})
+
+
+def __runGeonodeFetch():
+    return __runFetchers(fetcher_names={'GeonodeFetcher'})
+
+
+def __runFetchers(fetcher_names=None, exclude_fetcher_names=None):
     proxy_queue = Queue()
     proxy_fetcher = Fetcher()
 
-    for proxy in proxy_fetcher.run():
+    for proxy in proxy_fetcher.run(fetcher_names=fetcher_names,
+                                   exclude_fetcher_names=exclude_fetcher_names):
         proxy_queue.put(proxy)
 
     Checker("raw", proxy_queue)
@@ -65,13 +75,15 @@ def runScheduler():
     scheduler.configure(executors=executors, job_defaults=job_defaults,
                         logger=scheduler_log, timezone=timezone)
     monitor = SchedulerMonitor(scheduler, scheduler_log)
-    functions = {'proxy_fetch': __runProxyFetch, 'proxy_check': __runProxyCheck,
+    functions = {'proxy_fetch': __runProxyFetch, 'geonode_fetch': __runGeonodeFetch,
+                 'proxy_check': __runProxyCheck,
                  'log_cleanup': cleanupExpiredLogs}
     scheduler.add_listener(monitor.onEvent, monitor.events)
     monitor.start()
     try:
         monitor.runJob('log_cleanup', cleanupExpiredLogs, source='startup')
         monitor.runJob('proxy_fetch', __runProxyFetch, source='startup')
+        monitor.runJob('geonode_fetch', __runGeonodeFetch, source='startup')
         for job in SCHEDULED_JOBS:
             scheduler.add_job(monitor.wrap(job['id'], functions[job['id']]), job['trigger'],
                               id=job['id'], name=job['name'],

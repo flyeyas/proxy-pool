@@ -58,7 +58,8 @@ def test_without_scheduler_is_not_started(status_file):
     data = status_mod.getSchedulerStatus()
     assert data['status'] == 'not_started'
     assert data['online'] is False
-    assert {item['id'] for item in data['jobs']} == {'proxy_fetch', 'proxy_check', 'log_cleanup'}
+    assert {item['id'] for item in data['jobs']} == {
+        'proxy_fetch', 'geonode_fetch', 'proxy_check', 'log_cleanup'}
     assert all(item['status'] == 'not_started' for item in data['jobs'])
     assert not status_file.exists()
 
@@ -289,7 +290,7 @@ def test_atomic_replacement_allows_parallel_readers(monitor, status_file):
         for _ in range(100):
             snapshot = json.loads(status_file.read_text())
             assert snapshot['schema_version'] == 1
-            assert len(snapshot['jobs']) == 3
+            assert len(snapshot['jobs']) == 4
 
     with ThreadPoolExecutor(max_workers=4) as pool:
         readers = [pool.submit(read) for _ in range(3)]

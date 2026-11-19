@@ -9,6 +9,7 @@
    Change Activity:
                    2026/11/12: 原子写入状态快照, 跟踪执行结果和调度异常
                    2026/11/12: 执行记录按记录时间滚动保留最近一小时
+                   2026/11/18: 展示 Geonode 独立采集任务与 15 分钟周期
 -------------------------------------------------
 """
 __author__ = 'flyeyas'
@@ -42,9 +43,14 @@ HISTORY_RETENTION_SECONDS = 60 * 60
 # 调度器注册和未启动时的页面展示共用定义, 保证执行频率一致。
 SCHEDULED_JOBS = (
     {'id': 'proxy_fetch', 'name': '代理采集',
-     'description': '采集已启用的代理源, 验证后加入代理池',
+     'description': '采集除 Geonode 外的已启用代理源, 验证后加入代理池',
      'schedule': '每 5 分钟', 'trigger': 'interval',
      'trigger_args': {'minutes': 5}, 'options': {}},
+    {'id': 'geonode_fetch', 'name': 'Geonode 采集',
+     'description': '单独采集 Geonode 代理源, 验证后加入代理池',
+     'schedule': '每 15 分钟', 'trigger': 'interval',
+     'trigger_args': {'minutes': 15},
+     'options': {'max_instances': 1, 'coalesce': True}},
     {'id': 'proxy_check', 'name': '代理校验',
      'description': '复检代理池, 代理不足时补充采集',
      'schedule': '每 2 分钟', 'trigger': 'interval',

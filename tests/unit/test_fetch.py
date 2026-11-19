@@ -113,6 +113,34 @@ class TestDiscoverFetchers:
         assert "fetcher.sources.deleted_module" not in fetch_mod._module_cache
 
 
+class TestFetcherSelection:
+
+    @pytest.mark.parametrize('include,exclude,expected', [
+        (None, None, ['192.0.2.1:8080', '192.0.2.2:8080']),
+        ({'GeonodeFetcher'}, None, ['192.0.2.1:8080']),
+        (None, {'GeonodeFetcher'}, ['192.0.2.2:8080']),
+        (set(), None, []),
+    ])
+    def test_dispatcher_calls_selected_sources(self, tmp_path, monkeypatch,
+                                              include, exclude, expected):
+        class GeonodeFetcher(BaseFetcher):
+            name = 'geonode'
+            def fetch(self):
+                yield '192.0.2.1:8080'
+
+        class RegularFetcher(BaseFetcher):
+            name = 'regular'
+            def fetch(self):
+                yield '192.0.2.2:8080'
+
+        monkeypatch.setattr('helper.runtimeConfig.CONFIG_FILE', str(tmp_path / 'config.json'))
+        monkeypatch.setattr(fetch_mod, '_discover_fetchers',
+                            lambda excluded: [GeonodeFetcher, RegularFetcher])
+        proxies = list(fetch_mod.Fetcher().run(fetcher_names=include,
+                         exclude_fetcher_names=exclude))
+        assert sorted(proxy.proxy for proxy in proxies) == expected
+
+
 class TestThreadFetcher:
 
     @pytest.fixture(autouse=True)
@@ -167,3 +195,19 @@ class TestThreadFetcher:
         assert stat is not None
         assert stat["fails"] == 1
         assert stat["total_fails"] == 1
+
+    def test_fetcher_error_is_recorded_and_summarized(self):
+        """抓取器诊断写入统计并带入汇总日志"""
+        from helper.runtimeConfig import readConfig
+        mock_cls = MagicMock()
+        mock_cls.name = "geonode"
+        mock_cls.__name__ = "GeonodeFetcher"
+        mock_cls.return_value.fetch.return_value = []
+        mock_cls.return_value.last_error = 'HTTP 429'
+        with patch.object(fetch_mod, 'LogHandler') as mock_log:
+            thread = _ThreadFetcher(mock_cls, {})
+            thread.run()
+        stat = readConfig()['fetcher_stats']['GeonodeFetcher']
+        assert stat['last_error'] == 'HTTP 429'
+        assert any(' reason=HTTP 429' in str(call.args)
+                   for call in mock_log.return_value.warning.call_args_list)

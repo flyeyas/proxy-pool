@@ -34,7 +34,8 @@ def mock_status_monitor(monkeypatch):
     monitor = MagicMock()
     monitor.events = SchedulerMonitor.events
     monitor.wrap.side_effect = lambda job_id, function: function
-    monitor.runJob.side_effect = lambda job_id, function, **kwargs: function()
+    monitor.runJob.side_effect = lambda job_id, function, **kwargs: (
+        None if job_id == 'geonode_fetch' else function())
     monkeypatch.setattr(scheduler_mod, 'SchedulerMonitor', lambda *args: monitor)
     return monitor
 
@@ -59,8 +60,21 @@ class TestRunProxyFetch:
 
         mock_fetcher_cls.assert_called_once()
         mock_checker.assert_called_once()
+        mock_fetcher.run.assert_called_once_with(
+            fetcher_names=None, exclude_fetcher_names={'GeonodeFetcher'})
         call_args = mock_checker.call_args
         assert call_args[0][0] == "raw"
+
+    @patch("helper.scheduler.Checker")
+    @patch("helper.scheduler.Fetcher")
+    def test_geonode_fetch_runs_only_geonode(self, mock_fetcher_cls, mock_checker):
+        mock_fetcher = MagicMock()
+        mock_fetcher.run.return_value = iter([])
+        mock_fetcher_cls.return_value = mock_fetcher
+        _get_attr("__runGeonodeFetch")()
+        mock_fetcher.run.assert_called_once_with(
+            fetcher_names={'GeonodeFetcher'}, exclude_fetcher_names=None)
+        mock_checker.assert_called_once()
 
 
 class TestRunProxyCheck:
@@ -115,15 +129,15 @@ class TestRunScheduler:
         scheduler = observed[0]
         assert scheduler._logger is logger
         assert {job.id for job in scheduler.get_jobs()} == {
-            "proxy_fetch", "proxy_check", "log_cleanup"
+            "proxy_fetch", "geonode_fetch", "proxy_check", "log_cleanup"
         }
 
     @patch("helper.scheduler.BlockingScheduler")
     @patch("helper.scheduler.__runProxyFetch")
     @patch("helper.scheduler.ConfigHandler")
     @patch("helper.scheduler.LogHandler")
-    def test_adds_three_jobs(self, mock_log, mock_conf_cls, mock_fetch, mock_sched_cls):
-        """runScheduler 添加采集, 检查与日志清理任务"""
+    def test_adds_four_jobs(self, mock_log, mock_conf_cls, mock_fetch, mock_sched_cls):
+        """runScheduler 添加常规采集、Geonode采集、检查与日志清理任务"""
         mock_conf = MagicMock()
         mock_conf.timezone = "Asia/Shanghai"
         mock_conf_cls.return_value = mock_conf
@@ -132,7 +146,7 @@ class TestRunScheduler:
 
         scheduler_mod.runScheduler()
 
-        assert mock_sched.add_job.call_count == 3
+        assert mock_sched.add_job.call_count == 4
 
     @patch("helper.scheduler.BlockingScheduler")
     @patch("helper.scheduler.__runProxyFetch")
@@ -144,7 +158,7 @@ class TestRunScheduler:
         mock_conf_cls.return_value.timezone = "Asia/Shanghai"
         scheduler_mod.runScheduler()
         mock_log_cleanup.assert_called_once_with()
-        job = mock_sched_cls.return_value.add_job.call_args_list[2]
+        job = mock_sched_cls.return_value.add_job.call_args_list[3]
         assert job.args == (mock_log_cleanup, "cron")
         assert job.kwargs["minute"] == 0
         assert job.kwargs["max_instances"] == 1
@@ -173,6 +187,20 @@ class TestRunScheduler:
     @patch("helper.scheduler.__runProxyFetch")
     @patch("helper.scheduler.ConfigHandler")
     @patch("helper.scheduler.LogHandler")
+    def test_geonode_fetch_job_interval_15min(self, mock_log, mock_conf_cls, mock_fetch, mock_sched_cls):
+        mock_conf_cls.return_value.timezone = "Asia/Shanghai"
+        scheduler_mod.runScheduler()
+        calls = mock_sched_cls.return_value.add_job.call_args_list
+        job_call = next(call for call in calls if call.kwargs.get('id') == 'geonode_fetch')
+        assert job_call.args[1] == 'interval'
+        assert job_call.kwargs['minutes'] == 15
+        assert job_call.kwargs['max_instances'] == 1
+        assert job_call.kwargs['coalesce'] is True
+
+    @patch("helper.scheduler.BlockingScheduler")
+    @patch("helper.scheduler.__runProxyFetch")
+    @patch("helper.scheduler.ConfigHandler")
+    @patch("helper.scheduler.LogHandler")
     def test_check_job_interval_2min(self, mock_log, mock_conf_cls, mock_fetch, mock_sched_cls):
         """检查任务间隔 2 分钟"""
         mock_conf = MagicMock()
@@ -184,6 +212,6 @@ class TestRunScheduler:
         scheduler_mod.runScheduler()
 
         calls = mock_sched.add_job.call_args_list
-        second_call = calls[1]
-        assert second_call[0][1] == "interval"
-        assert second_call[1]["minutes"] == 2
+        check_call = next(call for call in calls if call.kwargs.get('id') == 'proxy_check')
+        assert check_call.args[1] == "interval"
+        assert check_call.kwargs["minutes"] == 2

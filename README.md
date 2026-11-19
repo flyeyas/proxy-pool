@@ -83,7 +83,7 @@ Open `http://127.0.0.1:5010/webui/` (build the frontend first; Docker images shi
 - **Dashboard**: total / HTTP / HTTPS / source counts; protocol & source distribution bars; proxy table (protocol filter, keyword search, single delete); 5s auto refresh; "fetch & validate now" button
 - **Fetchers**: all sources with status; **runtime enable/disable toggles** (persisted to `runtime_config.json`, merged with the `setting.py` blacklist, hot reload); consecutive-failure auto-disable with annotated reason. Each source can use verified pool proxies (default) or connect directly. Requests fall back to direct connections when no suitable verified proxy is available; settings apply on the next collection run.
 - **Tokens**: create / rename / delete **API tokens** for external programs, with a validity period (7 / 30 / 90 / 365 days or permanent) and one-click copy
-- **Scheduled tasks**: scheduler heartbeat, fetch/check/log cleanup status, next run, latest result and duration, success/error counts and executions recorded within the last hour; 5s auto refresh
+- **Scheduled tasks**: regular sources fetch every 5 minutes, Geonode fetches every 15 minutes, and proxy checks run every 2 minutes; view status, next run, results, durations, and the last hour of executions with 5s auto refresh
 - **Logs**: tail of `fetch` / `checker` / `scheduler` etc., selectable line count, auto refresh
 
 Set `WEBUI_PASSWORD` in `.env` to enable authentication: all data and management APIs (including `/get` `/all` `/count`) then require authorization — the WebUI uses the login session, external programs use an API token.
