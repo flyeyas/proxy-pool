@@ -49,8 +49,8 @@ def test_inconclusive_pending_placeholder_is_not_completed_coverage(store, tmp_p
     assert_uncovered(configured, good, candidate)
 
 
-@pytest.mark.parametrize('code', ['unknown', 'future_result', None])
-def test_unrecognized_result_does_not_grant_migration_coverage(store, tmp_path, monkeypatch, code):
+@pytest.mark.parametrize('code', ['unknown', 'future_result', None, 'deadline_exceeded'])
+def test_unfinished_or_unrecognized_result_does_not_grant_migration_coverage(store, tmp_path, monkeypatch, code):
     configured, good = configure(store, tmp_path, monkeypatch)
     repo, policy, control, owner = configured
     candidate, task = enqueue(configured, '9.9.9.9:80')
@@ -78,3 +78,20 @@ def test_secondary_profile_success_cannot_replace_known_country_primary(store, t
     attempt['profile'] = 'overseas'
     assert repo.commit(task, [attempt], policy, owner)
     assert_uncovered(configured, good, candidate)
+
+
+@pytest.mark.parametrize('code', ['proxy_connect_failed', 'target_restricted', 'read_timeout'])
+def test_conclusive_main_failure_counts_as_checked_without_becoming_available(store, tmp_path, monkeypatch, code):
+    configured, good = configure(store, tmp_path, monkeypatch)
+    repo, policy, control, owner = configured
+    candidate, task = enqueue(configured, '9.9.9.9:80')
+    attempt = result(policy)
+    attempt['code'] = code
+    assert repo.commit(task, [attempt], policy, owner)
+    values = {c.address: json.dumps({'proxy': c.address, 'region': c.country}) for c in (good, candidate)}
+    repo.redis.hset(repo.table, mapping=values)
+    activation = activate(repo, policy, minimum=1)
+    assert activation['completed'] == activation['legacy_completed'] == 2
+    assert activation['compatible_available'] == 1
+    assert set(repo.redis.hkeys(repo.table)) == {good.address}
+    assert repo.redis.hgetall(activation['rollback_hash']) == values

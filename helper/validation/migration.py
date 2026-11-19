@@ -12,7 +12,6 @@ _COMPLETED_MAIN_RESULTS = frozenset((
     'available', 'target_restricted', 'auth_required', 'auth_failed', 'tls_invalid',
     'proxy_connect_failed', 'protocol_error', 'read_timeout', 'transport_error',
     'target_http_error', 'content_inconclusive', 'redirect_limit', 'custom_rejected',
-    'deadline_exceeded',
 ))
 
 
